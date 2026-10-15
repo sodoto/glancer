@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 (2026-10-15)
+- Much less scrolling in widget forms. Entries in a list (monitor sites, bookmarks links, feeds, markets…)
+  are folded to one line showing their title and address; click one to open it, or use "unfold all". New
+  entries and entries missing a required value open by themselves.
+- Rarely used settings (check URL, timeout, status codes, basic authentication, link target, cache, CSS
+  class…) are under a folded **More options**, which lists the ones that are set.
+- The widget's title is now at the top of its form.
+
 ## 0.1.2 (2026-10-15)
 - Much faster: every click could take seconds on a small LXC when glance.yml had even one line written
   differently than Glancer would write it (extra spaces, for example). Glancer re-detected the file's

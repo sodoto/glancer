@@ -181,6 +181,19 @@ button.add-widget:hover { color: var(--accent); border-color: var(--accent); bac
 .suggest-item:hover, .suggest-item.active { background: var(--blue-bg); }
 .suggest-item small { color: var(--muted); font-size: 11.5px; margin-left: auto; }
 .suggest-msg { padding: 7px 10px; font-size: 12.5px; color: var(--muted); }
+details.more { margin-top: 10px; }
+details.more > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); width: max-content; }
+details.more > summary:hover { color: var(--accent); }
+details.more[open] > summary { margin-bottom: 8px; }
+.list-item .item-head .item-title { flex: 1; min-width: 0; display: flex; gap: 6px; align-items: baseline; cursor: pointer;
+  overflow: hidden; white-space: nowrap; }
+.list-item .item-head .item-title b { flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+.list-item .item-head .item-title:hover b { color: var(--accent); }
+.item-sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.chev { color: var(--muted); width: 12px; flex: 0 0 auto; }
+.list-item.folded { padding-top: 6px; padding-bottom: 6px; }
+.list-item.folded .item-head { margin-bottom: 0; }
+button.small-link { font-size: 12px; font-weight: 500; margin-left: 6px; }
 details.fold > summary { cursor: pointer; margin-bottom: 6px; }
 details.fold:not([open]) > summary { color: var(--muted); font-weight: 500; }
 .list-item { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--panel-2); }

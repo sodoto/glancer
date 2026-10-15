@@ -5,78 +5,93 @@ const TARGETS = [["_blank", "_blank (new tab)"], ["_self", "_self (same tab)"], 
 const HOUR_FORMATS = [["12h", "12h"], ["24h", "24h"]];
 const ICON_HINT = "si:, sh:, di: or mdi: icon name, or an image URL. Example: sh:jellyfin";
 
+// Rarely needed settings: shown under a folded "More options".
+const more = (...fields) => fields.map(f => ({ ...f, advanced: true }));
+const host = (url) => { try { return new URL(String(url)).host || String(url); } catch { return String(url || ""); } };
+
 const SHARED_FIELDS = [
   { key: "title", label: "Title", placeholder: "Defined by the widget" },
-  { key: "title-url", label: "Title link", placeholder: "https://…", hint: "Where clicking the title goes" },
-  { key: "cache", label: "Cache", placeholder: "e.g. 5m", hint: "Number + s, m, h or d (not every widget uses it)" },
-  { key: "css-class", label: "CSS class" },
-  { key: "hide-header", label: "Hide the header (title)", type: "bool" },
+  ...more(
+    { key: "title-url", label: "Title link", placeholder: "https://…", hint: "Where clicking the title goes" },
+    { key: "cache", label: "Cache", placeholder: "e.g. 5m", hint: "Number + s, m, h or d (not every widget uses it)" },
+    { key: "css-class", label: "CSS class" },
+    { key: "hide-header", label: "Hide the header (title)", type: "bool" },
+  ),
 ];
 
-const LINK_OPTIONS = [
+const LINK_OPTIONS = more(
   { key: "same-tab", label: "Open in the same tab", type: "bool" },
   { key: "hide-arrow", label: "Hide the arrow", type: "bool" },
   { key: "target", label: "Link target", type: "select", options: TARGETS, hint: "Overrides “same tab”" },
-];
+);
 
 const WIDGET_FORMS = {
   bookmarks: [
-    { key: "groups", label: "Groups", type: "list", item: "Group", titleKey: "title", required: true, newItem: () => ({ links: [] }), fields: [
-      { key: "title", label: "Group title", placeholder: "Optional" },
-      { key: "color", label: "Color", placeholder: "e.g. 10 70 50", hint: "HSL: hue saturation lightness" },
-      ...LINK_OPTIONS,
-      { key: "links", label: "Links", type: "list", item: "Link", titleKey: "title", required: true, fields: [
-        { key: "title", label: "Title", required: true },
-        { key: "url", label: "URL", required: true, placeholder: "https://…" },
-        { key: "description", label: "Description" },
-        { key: "icon", label: "Icon", hint: ICON_HINT },
+    { key: "groups", label: "Groups", type: "list", item: "Group", titleKey: "title", required: true, newItem: () => ({ links: [] }),
+      subtitle: (g) => `${(g.links || []).length} link${(g.links || []).length === 1 ? "" : "s"}`, fields: [
+        { key: "title", label: "Group title", placeholder: "Optional" },
+        { key: "color", label: "Color", placeholder: "e.g. 10 70 50", hint: "HSL: hue saturation lightness" },
         ...LINK_OPTIONS,
+        { key: "links", label: "Links", type: "list", item: "Link", titleKey: "title", required: true, subtitle: (l) => host(l.url), fields: [
+          { key: "title", label: "Title", required: true },
+          { key: "url", label: "URL", required: true, placeholder: "https://…" },
+          { key: "icon", label: "Icon", hint: ICON_HINT },
+          ...more({ key: "description", label: "Description" }),
+          ...LINK_OPTIONS,
+        ] },
       ] },
-    ] },
   ],
   monitor: [
     { key: "style", label: "Style", type: "select", options: [["compact", "compact"]] },
     { key: "show-failing-only", label: "Show only failing sites", type: "bool" },
-    { key: "sites", label: "Sites", type: "list", item: "Site", titleKey: "title", required: true, fields: [
+    { key: "sites", label: "Sites", type: "list", item: "Site", titleKey: "title", required: true, subtitle: (s) => host(s.url), fields: [
       { key: "title", label: "Title", required: true },
       { key: "url", label: "URL", required: true, placeholder: "https://…", hint: "Must be reachable by Glance" },
-      { key: "check-url", label: "Check URL", hint: "Checked instead of the URL, if set" },
-      { key: "error-url", label: "Error URL", hint: "Opened when the site is down" },
       { key: "icon", label: "Icon", hint: ICON_HINT },
-      { key: "timeout", label: "Timeout", placeholder: "3s" },
-      { key: "alt-status-codes", label: "Also OK status codes", type: "csv", placeholder: "e.g. 401, 403" },
-      { key: "allow-insecure", label: "Allow self-signed certificates", type: "bool" },
-      { key: "same-tab", label: "Open in the same tab", type: "bool" },
-      { key: "basic-auth", label: "Basic authentication", type: "object", fields: [
-        { key: "username", label: "Username" },
-        { key: "password", label: "Password", hint: "Tip: use ${ENV_VAR} instead of the real password" },
-      ] },
+      ...more(
+        { key: "check-url", label: "Check URL", hint: "Checked instead of the URL, if set" },
+        { key: "error-url", label: "Error URL", hint: "Opened when the site is down" },
+        { key: "timeout", label: "Timeout", placeholder: "3s" },
+        { key: "alt-status-codes", label: "Also OK status codes", type: "csv", placeholder: "e.g. 401, 403" },
+        { key: "allow-insecure", label: "Allow self-signed certificates", type: "bool" },
+        { key: "same-tab", label: "Open in the same tab", type: "bool" },
+        { key: "basic-auth", label: "Basic authentication", type: "object", fields: [
+          { key: "username", label: "Username" },
+          { key: "password", label: "Password", hint: "Tip: use ${ENV_VAR} instead of the real password" },
+        ] },
+      ),
     ] },
   ],
   rss: [
     { key: "style", label: "Style", type: "select", options: [["vertical-list", "vertical-list"], ["detailed-list", "detailed-list"], ["horizontal-cards", "horizontal-cards"], ["horizontal-cards-2", "horizontal-cards-2"]] },
     { key: "limit", label: "Max articles", type: "number", placeholder: "25" },
     { key: "collapse-after", label: "Collapse after", type: "number", placeholder: "5", hint: "-1 = never collapse" },
-    { key: "thumbnail-height", label: "Thumbnail height (rem)", type: "number", placeholder: "10", hint: "horizontal-cards only" },
-    { key: "card-height", label: "Card height (rem)", type: "number", placeholder: "27", hint: "horizontal-cards-2 only" },
-    { key: "preserve-order", label: "Keep the feeds' own order", type: "bool" },
-    { key: "single-line-titles", label: "Single-line titles", type: "bool" },
-    { key: "feeds", label: "Feeds", type: "list", item: "Feed", titleKey: "title", fallbackKey: "url", required: true, fields: [
+    ...more(
+      { key: "thumbnail-height", label: "Thumbnail height (rem)", type: "number", placeholder: "10", hint: "horizontal-cards only" },
+      { key: "card-height", label: "Card height (rem)", type: "number", placeholder: "27", hint: "horizontal-cards-2 only" },
+      { key: "preserve-order", label: "Keep the feeds' own order", type: "bool" },
+      { key: "single-line-titles", label: "Single-line titles", type: "bool" },
+    ),
+    { key: "feeds", label: "Feeds", type: "list", item: "Feed", titleKey: "title", fallbackKey: "url", required: true, subtitle: (f) => host(f.url), fields: [
       { key: "url", label: "Feed URL", required: true, placeholder: "https://…/rss" },
       { key: "title", label: "Title", placeholder: "From the feed" },
-      { key: "limit", label: "Max articles from this feed", type: "number" },
-      { key: "item-link-prefix", label: "Link prefix" },
-      { key: "hide-categories", label: "Hide categories (detailed-list)", type: "bool" },
-      { key: "hide-description", label: "Hide description (detailed-list)", type: "bool" },
+      ...more(
+        { key: "limit", label: "Max articles from this feed", type: "number" },
+        { key: "item-link-prefix", label: "Link prefix" },
+        { key: "hide-categories", label: "Hide categories (detailed-list)", type: "bool" },
+        { key: "hide-description", label: "Hide description (detailed-list)", type: "bool" },
+      ),
     ] },
   ],
   search: [
     { key: "search-engine", label: "Search engine", type: "combo", options: ["duckduckgo", "google", "bing", "perplexity", "kagi", "startpage"], placeholder: "duckduckgo", hint: "A name from the list or a URL with {QUERY}" },
     { key: "placeholder", label: "Placeholder text", placeholder: "Type here to search…" },
-    { key: "target", label: "Link target", type: "select", options: TARGETS },
-    { key: "new-tab", label: "Open results in a new tab", type: "bool" },
-    { key: "autofocus", label: "Focus the search bar on load", type: "bool" },
-    { key: "bangs", label: "Bangs (shortcuts like !yt)", type: "list", item: "Bang", titleKey: "shortcut", fields: [
+    ...more(
+      { key: "target", label: "Link target", type: "select", options: TARGETS },
+      { key: "new-tab", label: "Open results in a new tab", type: "bool" },
+      { key: "autofocus", label: "Focus the search bar on load", type: "bool" },
+    ),
+    { key: "bangs", label: "Bangs (shortcuts like !yt)", type: "list", item: "Bang", titleKey: "shortcut", subtitle: (b) => b.title || host(b.url), fields: [
       { key: "shortcut", label: "Shortcut", required: true, placeholder: "!yt" },
       { key: "url", label: "URL", required: true, placeholder: "https://www.youtube.com/results?search_query={QUERY}" },
       { key: "title", label: "Title", placeholder: "YouTube" },
@@ -86,8 +101,10 @@ const WIDGET_FORMS = {
     { key: "location", label: "Location", required: true, placeholder: "London, United Kingdom", hint: "City, Country (state optional)" },
     { key: "units", label: "Units", type: "select", options: [["metric", "metric (°C)"], ["imperial", "imperial (°F)"]] },
     { key: "hour-format", label: "Hour format", type: "select", options: HOUR_FORMATS },
-    { key: "hide-location", label: "Hide the location name", type: "bool" },
-    { key: "show-area-name", label: "Show the state / area name", type: "bool" },
+    ...more(
+      { key: "hide-location", label: "Hide the location name", type: "bool" },
+      { key: "show-area-name", label: "Show the state / area name", type: "bool" },
+    ),
   ],
   calendar: [
     { key: "first-day-of-week", label: "First day of the week", type: "select",
@@ -95,7 +112,7 @@ const WIDGET_FORMS = {
   ],
   clock: [
     { key: "hour-format", label: "Hour format", type: "select", options: HOUR_FORMATS },
-    { key: "timezones", label: "Other timezones", type: "list", item: "Timezone", titleKey: "label", fallbackKey: "timezone", fields: [
+    { key: "timezones", label: "Other timezones", type: "list", item: "Timezone", titleKey: "label", fallbackKey: "timezone", subtitle: (t) => t.label ? t.timezone : "", fields: [
       { key: "timezone", label: "Timezone", required: true, placeholder: "Europe/Paris" },
       { key: "label", label: "Label", placeholder: "Paris" },
     ] },
@@ -105,14 +122,18 @@ const WIDGET_FORMS = {
     const listKey = !has(data, "markets") && has(data, "stocks") ? "stocks" : "markets";
     return [
       { key: "sort-by", label: "Sort by", type: "select", options: [["change", "change (biggest % gain first)"], ["absolute-change", "absolute-change (biggest move first)"]], hint: "Default: the order below" },
-      { key: "chart-link-template", label: "Chart link (all markets)", placeholder: "https://www.tradingview.com/chart/?symbol={SYMBOL}", hint: "{SYMBOL} is replaced by each symbol" },
-      { key: "symbol-link-template", label: "Symbol link (all markets)", placeholder: "https://www.google.com/search?tbm=nws&q={SYMBOL}", hint: "{SYMBOL} is replaced by each symbol" },
-      { key: listKey, label: "Markets", type: "list", item: "Market", titleKey: "name", fallbackKey: "symbol", required: true, fields: [
+      ...more(
+        { key: "chart-link-template", label: "Chart link (all markets)", placeholder: "https://www.tradingview.com/chart/?symbol={SYMBOL}", hint: "{SYMBOL} is replaced by each symbol" },
+        { key: "symbol-link-template", label: "Symbol link (all markets)", placeholder: "https://www.google.com/search?tbm=nws&q={SYMBOL}", hint: "{SYMBOL} is replaced by each symbol" },
+      ),
+      { key: listKey, label: "Markets", type: "list", item: "Market", titleKey: "name", fallbackKey: "symbol", required: true, subtitle: (m) => m.name ? m.symbol : "", fields: [
         { key: "symbol", label: "Symbol", required: true, placeholder: "Type a name or symbol, e.g. apple, bitcoin",
           hint: "Suggestions come from Yahoo Finance", suggest: (q) => suggestSymbols(q), onPick: (it, obj, scope) => fillMarketName(it, obj, scope) },
         { key: "name", label: "Name", placeholder: "e.g. S&P 500", hint: "Shown under the symbol" },
-        { key: "symbol-link", label: "Symbol link", placeholder: "https://…", hint: "Overrides the template above" },
-        { key: "chart-link", label: "Chart link", placeholder: "https://…", hint: "Overrides the template above" },
+        ...more(
+          { key: "symbol-link", label: "Symbol link", placeholder: "https://…", hint: "Overrides the template above" },
+          { key: "chart-link", label: "Chart link", placeholder: "https://…", hint: "Overrides the template above" },
+        ),
       ] },
     ];
   },
@@ -121,14 +142,16 @@ const WIDGET_FORMS = {
     { key: "category", label: "Category filter", hint: "Only containers with this glance.category label" },
     { key: "hide-by-default", label: "Hide containers by default", type: "bool" },
     { key: "running-only", label: "Only running containers", type: "bool" },
-    { key: "format-container-names", label: "Prettify container names", type: "bool" },
+    ...more({ key: "format-container-names", label: "Prettify container names", type: "bool" }),
     { key: "containers", label: "Containers (instead of glance.* labels)", type: "map", item: "Container", keyLabel: "Container name", fields: [
       { key: "name", label: "Display name" },
-      { key: "description", label: "Description" },
       { key: "url", label: "URL" },
       { key: "icon", label: "Icon", hint: ICON_HINT },
-      { key: "same-tab", label: "Open in the same tab", type: "bool" },
-      { key: "hide", label: "Hide", type: "bool" },
+      ...more(
+        { key: "description", label: "Description" },
+        { key: "same-tab", label: "Open in the same tab", type: "bool" },
+        { key: "hide", label: "Hide", type: "bool" },
+      ),
     ] },
   ],
 };
@@ -167,7 +190,22 @@ function parseNumber(v) {
 }
 
 // Render fields for obj (mutated in place). onChange is called after every edit.
+// Fields marked `advanced: true` go under a folded "More options".
 function renderFields(obj, fields, onChange = () => {}) {
+  const basic = fields.filter(f => !f.advanced);
+  const advanced = fields.filter(f => f.advanced);
+  const wrap = renderFieldList(obj, basic, onChange);
+  if (advanced.length) {
+    // Folded even when something in it is set; the summary names what is set.
+    const used = advanced.filter(f => has(obj, f.key)).map(f => f.label.toLowerCase());
+    wrap.append(h("details", { class: "fold more" },
+      h("summary", {}, "More options", used.length ? h("span", { class: "muted" }, ` · ${used.join(", ")}`) : null),
+      renderFieldList(obj, advanced, onChange)));
+  }
+  return wrap;
+}
+
+function renderFieldList(obj, fields, onChange) {
   const wrap = h("div");
   const grid = h("div", { class: "grid" });
   const blocks = [];
@@ -178,6 +216,13 @@ function renderFields(obj, fields, onChange = () => {}) {
   if (grid.children.length) wrap.append(grid);
   wrap.append(...blocks);
   return wrap;
+}
+
+// Which list entries are unfolded. Kept across re-renders of the same form.
+const openItems = new WeakSet();
+
+function itemNeedsAttention(f, item) {
+  return f.fields.some(ff => ff.required && ff.type !== "list" && (item[ff.key] === undefined || item[ff.key] === ""));
 }
 
 function renderSimple(obj, f, onChange) {
@@ -379,14 +424,46 @@ function renderBlock(obj, f, onChange) {
       return box;
     }
     const items = arr || [];
+    // Entries start folded to one line; one entry alone, or one that misses a required value, starts open.
+    items.forEach(item => {
+      if (isObj(item) && (items.length === 1 || itemNeedsAttention(f, item))) openItems.add(item);
+    });
+    const label = box.firstChild;
+    if (items.length > 2) {
+      const allOpen = items.every(it => !isObj(it) || openItems.has(it));
+      label.append(" ", h("button", { type: "button", class: "link small-link", onclick: () => {
+        items.forEach(it => { if (isObj(it)) { if (allOpen) openItems.delete(it); else openItems.add(it); } });
+        rebuild();
+      } }, allOpen ? "fold all" : "unfold all"));
+    }
     items.forEach((item, i) => {
-      const head = h("b", {}, itemTitle(f, item, i));
+      const title = h("b", {}, itemTitle(f, item, i));
+      const sub = h("span", { class: "item-sub" }, isObj(item) && f.subtitle ? f.subtitle(item) : "");
       const move = (d) => { const j = i + d; [items[i], items[j]] = [items[j], items[i]]; rebuild(); };
+      const open = !isObj(item) || openItems.has(item);
       const body = isObj(item)
-        ? renderFields(item, f.fields, () => { head.textContent = itemTitle(f, item, i); onChange(); })
+        ? renderFields(item, f.fields, () => {
+          title.textContent = itemTitle(f, item, i);
+          sub.textContent = f.subtitle ? f.subtitle(item) : "";
+          onChange();
+        })
         : h("div", { class: "hint" }, "This item is not a mapping: edit it in the YAML tab.");
-      box.append(h("div", { class: "list-item" },
-        h("div", { class: "item-head" }, head,
+      if (!open) body.hidden = true;
+      const entry = h("div", { class: "list-item" + (open ? "" : " folded") });
+      const toggle = () => {
+        if (!isObj(item)) return;
+        const nowOpen = body.hidden;
+        body.hidden = !nowOpen;
+        entry.classList.toggle("folded", !nowOpen);
+        chev.textContent = nowOpen ? "▾" : "▸";
+        if (nowOpen) openItems.add(item); else openItems.delete(item);
+      };
+      const chev = h("span", { class: "chev" }, open ? "▾" : "▸");
+      entry.append(
+        h("div", { class: "item-head" },
+          h("div", { class: "item-title", role: "button", tabindex: 0, title: "Show or hide the settings",
+            onclick: toggle, onkeydown: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } } },
+            chev, title, sub),
           h("button", { type: "button", class: "mini", title: "Move up", disabled: i === 0, onclick: () => move(-1) }, "↑"),
           h("button", { type: "button", class: "mini", title: "Move down", disabled: i === items.length - 1, onclick: () => move(1) }, "↓"),
           h("button", { type: "button", class: "mini danger", title: "Remove", onclick: () => {
@@ -394,12 +471,18 @@ function renderBlock(obj, f, onChange) {
             if (!items.length && !had && !f.required) delete obj[f.key];
             rebuild();
           } }, "✕")),
-        body));
+        body);
+      box.append(entry);
     });
     box.append(h("button", { type: "button", class: "small", onclick: () => {
       if (!Array.isArray(obj[f.key])) obj[f.key] = [];
-      obj[f.key].push(f.newItem ? f.newItem() : {});
+      const fresh = f.newItem ? f.newItem() : {};
+      openItems.add(fresh);  // a new entry opens so it can be filled in
+      obj[f.key].push(fresh);
       rebuild();
+      const added = el.querySelectorAll(":scope > .list-item");
+      const last = added[added.length - 1];
+      if (last) { last.scrollIntoView({ block: "nearest" }); const inp = last.querySelector("input"); if (inp) inp.focus(); }
     } }, `+ Add ${f.item.toLowerCase()}`));
     return box;
   }
@@ -412,14 +495,14 @@ function renderBlock(obj, f, onChange) {
 function widgetForm(data, onChange) {
   const spec = WIDGET_FORMS[data.type === "stocks" ? "markets" : data.type] || [];
   const own = typeof spec === "function" ? spec(data) : spec;
-  const wrap = h("div");
+  // The title first (with the rarely used common settings folded), then the widget's own settings.
+  const wrap = h("div", {}, h("div", { class: "form-section" }, renderFields(data, SHARED_FIELDS, onChange)));
   if (own.length) {
     wrap.append(h("div", { class: "form-section" }, h("h4", {}, `${widgetLabel(data.type)} settings`), renderFields(data, own, onChange)));
   } else if (!["group", "split-column"].includes(data.type)) {
-    wrap.append(h("p", { class: "help" }, "Glancer has no form for this widget type yet. Use the ",
-      h("b", {}, "YAML"), " tab for its own settings; the common ones are below."));
+    wrap.append(h("p", { class: "help", style: "margin-top:14px" }, "Glancer has no form for this widget type yet. Use the ",
+      h("b", {}, "YAML"), " tab for its own settings."));
   }
-  wrap.append(h("div", { class: "form-section" }, h("h4", {}, "Common"), renderFields(data, SHARED_FIELDS, onChange)));
   const known = new Set(["type", "widgets", ...own.map(f => f.key), ...SHARED_FIELDS.map(f => f.key)]);
   const other = Object.keys(data).filter(k => !known.has(k));
   if (other.length) {
