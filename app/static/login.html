@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Glancer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%232563eb' d='M3 3h7v9H3zm11 0h7v5h-7zM3 15h7v6H3zm11-4h7v10h-7z'/></svg>">
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body class="login-body">
+<main class="login-card">
+  <h1>Glancer</h1>
+  <p class="help" id="loginLead">Sign in to edit your Glance dashboard.</p>
+  <form id="loginForm" novalidate>
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <div class="hint" id="passwordHint" hidden>At least 8 characters. It is stored hashed.</div>
+    </div>
+    <div class="field" id="confirmField" hidden>
+      <label for="confirm">Repeat the password</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password">
+    </div>
+    <p class="login-error" id="loginError" role="alert" hidden></p>
+    <button class="primary" type="submit" id="loginBtn">Sign in</button>
+  </form>
+  <p class="login-foot">Unofficial tool, not affiliated with the Glance project.</p>
+</main>
+<script src="static/login.js"></script>
+</body>
+</html>

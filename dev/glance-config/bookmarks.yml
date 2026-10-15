@@ -1,0 +1,6 @@
+- type: bookmarks
+  groups:
+    - title: Media
+      links:
+        - title: Jellyfin
+          url: https://jellyfin.example.com

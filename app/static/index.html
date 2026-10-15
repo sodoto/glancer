@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glancer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%232563eb' d='M3 3h7v9H3zm11 0h7v5h-7zM3 15h7v6H3zm11-4h7v10h-7z'/></svg>">
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Glancer</h1>
+    <span class="unofficial" title="Glancer is a community tool. It is not made by or affiliated with the Glance project.">Unofficial editor for Glance</span>
+    <nav>
+      <a href="#" id="navEditor">Editor</a>
+      <a href="#raw" id="navRaw">Raw YAML</a>
+      <a href="#backups" id="navBackups">Backups</a>
+    </nav>
+    <span class="spacer"></span>
+    <a class="btn small" id="openGlance" target="_blank" rel="noopener" hidden>Open Glance ↗</a>
+    <span class="meta" id="version"></span>
+    <button class="small" id="accountBtn">Account</button>
+    <button class="small" id="logoutBtn">Log out</button>
+  </header>
+
+  <div id="notices"></div>
+  <main id="editorView"></main>
+  <main id="rawView" hidden></main>
+  <main id="backupsView" hidden></main>
+</div>
+
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal" id="modalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop dialog-layer" id="dialog" hidden>
+  <div class="modal dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogMsg">
+    <h3 id="dialogTitle"></h3>
+    <div id="dialogMsg"></div>
+    <div class="dialog-actions">
+      <button id="dialogCancel">Cancel</button>
+      <button class="primary" id="dialogOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="savebar" id="savebar" hidden>
+  <div class="inner">
+    <span class="msg" id="saveMsg">You have unsaved changes</span>
+    <button id="undoBtn" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="discardBtn">Discard all</button>
+    <button class="primary" id="saveBtn">Review &amp; save</button>
+  </div>
+</div>
+
+<script src="static/common.js"></script>
+<script src="static/forms.js"></script>
+<script src="static/editor.js"></script>
+<script src="static/views.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+# My homelab dashboard
+server:
+  port: 8080
+  assets-path: /app/assets
+
+theme:
+  background-color: 225 14 15
+  primary-color: 157 47 65
+  contrast-multiplier: 1.1
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+
+          - type: weather
+            location: Montreal, Canada
+            units: metric # celsius please
+
+      - size: full
+        widgets:
+          - type: search
+            search-engine: duckduckgo
+            bangs:
+              - title: YouTube
+                shortcut: "!yt"
+                url: https://www.youtube.com/results?search_query={QUERY}
+
+          - type: monitor
+            cache: 1m
+            title: Services
+            sites:
+              - title: Jellyfin
+                url: https://jellyfin.${DOMAIN}
+                icon: si:jellyfin
+              - title: Immich
+                url: https://photos.${DOMAIN}
+                icon: si:immich
+                allow-insecure: true
+
+          - $include: bookmarks.yml
+
+  - $include: videos-page.yml
+
+  - name: Homelab
+    slug: lab
+    width: slim
+    columns:
+      - size: full
+        widgets:
+          - type: docker-containers
+            sock-path: tcp://docker-socket-proxy:2375
+            hide-by-default: false
+          - type: group
+            widgets:
+              - type: hacker-news
+              - type: lobsters
+      - size: small
+        widgets:
+          - type: custom-api
+            title: Pi-hole
+            url: http://pihole.lan/api/stats
+            template: |
+              <p>{{ .JSON.Int "queries" }} queries</p>

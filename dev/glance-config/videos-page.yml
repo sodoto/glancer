@@ -1,0 +1,7 @@
+- name: Videos
+  columns:
+    - size: full
+      widgets:
+        - type: videos
+          channels:
+            - UCXuqSBlHAE6Xw-yeJA0Tunw
