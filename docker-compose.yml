@@ -2,8 +2,7 @@
 # `glancer:` service into that file (see the README) and use `./config:/glance-config`.
 services:
   glancer:
-    build: https://github.com/sodoto/glancer.git#main
-    image: glancer:latest
+    image: ghcr.io/sodoto/glancer:latest
     container_name: glancer
     restart: unless-stopped
     ports:

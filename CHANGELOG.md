@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 (2026-10-15)
+- Ready-made Docker image: `ghcr.io/sodoto/glancer:latest` (for regular PCs/servers and ARM boards like a
+  Raspberry Pi). No more building it yourself: the compose file and the install steps use the image, and
+  updating is `docker compose pull` + `docker compose up -d`.
+- Each release is tested and published automatically by GitHub Actions.
+
 ## 0.1.0 (2026-10-15)
 First release.
 - Edits the real glance.yml in place. Comments, key order, quoting, `${ENV}` placeholders and `$include`

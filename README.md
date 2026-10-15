@@ -51,8 +51,7 @@ Paste this under `services:`, at the same indentation as `glance:`, and use the 
 
 ```yaml
   glancer:
-    build: https://github.com/sodoto/glancer.git#main
-    image: glancer:latest
+    image: ghcr.io/sodoto/glancer:latest
     container_name: glancer
     restart: unless-stopped
     ports:
@@ -62,11 +61,11 @@ Paste this under `services:`, at the same indentation as `glance:`, and use the 
       - ./glancer-data:/data        # Glancer's login and backups
 ```
 
-Then deploy the stack again (Dockhand: **Deploy**; command line: `docker compose up -d --build` in that folder).
-Building takes a minute the first time.
+Then deploy the stack again (Dockhand: **Deploy**; command line: `docker compose up -d` in that folder).
+Docker downloads the ready-made Glancer image (it works on regular PCs and on ARM boards like a Raspberry Pi).
 
 **Or on its own:** download [docker-compose.yml](docker-compose.yml) into a new folder, change
-`/opt/glance/config` to your Glance config folder, and run `docker compose up -d --build` there.
+`/opt/glance/config` to your Glance config folder, and run `docker compose up -d` there.
 
 ### 3. Open it and create your login
 
@@ -84,8 +83,22 @@ Create the login right after installing: until then, anyone who can reach the pa
 
 ## Updating Glancer
 
-Run `docker compose up -d --build` again in the folder of the compose file (in Dockhand: redeploy the
-stack with "rebuild" or "pull"). Your login and backups are kept in the data folder.
+In the folder of the compose file, run:
+
+```bash
+docker compose pull glancer
+```
+
+```bash
+docker compose up -d glancer
+```
+
+In Dockhand: redeploy the stack with the option to pull the latest images. Your login and backups are kept in
+the data folder. To stay on one version instead of always the newest, use for example
+`ghcr.io/sodoto/glancer:0.1` (newest 0.1.x) or `ghcr.io/sodoto/glancer:0.1.1`.
+
+**Prefer to build it yourself?** Replace the `image:` line with `build: https://github.com/sodoto/glancer.git#main`
+and use `docker compose up -d --build`.
 
 ## Settings
 
