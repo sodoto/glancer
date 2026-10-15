@@ -232,7 +232,7 @@ async def get_config():
         try:
             doc = Document(loaded.text)
             out["tree"] = tree(doc)
-            out["reformats"] = doc.reformats
+            out["reformats"] = doc.reformats()
         except EditError as exc:
             out["parse_error"] = str(exc)
     return out

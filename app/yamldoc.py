@@ -4,8 +4,10 @@ Everything the user did not touch keeps its comments, key order, quoting, ${ENV}
 and $include lines. Edits are expressed as small operations on a path into the document.
 """
 import copy
+import hashlib
 import io
 import re
+from collections import Counter, OrderedDict
 from datetime import date, datetime
 
 from ruamel.yaml import YAML
@@ -13,9 +15,9 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq, TaggedScalar
 from ruamel.yaml.error import CommentMark, YAMLError
 from ruamel.yaml.tokens import CommentToken
 
-# Indentation styles to try: (mapping indent, list item indent, dash offset), most common first.
-STYLES = [(2, 4, 2), (2, 2, 0), (4, 4, 2), (4, 6, 4), (4, 4, 0), (4, 8, 4), (2, 4, 0), (3, 3, 1), (4, 2, 0)]
-STYLES += [(m, s, o) for m in (2, 3, 4) for o in range(0, 5) for s in (o + 2, o + 4) if (m, s, o) not in STYLES]
+# Indentation styles (mapping indent, list item indent, dash offset), most common first. The style is
+# read from the file; these are only tried when that guess doesn't reproduce it exactly.
+STYLES = [(2, 4, 2), (2, 2, 0), (4, 4, 2)]
 INCLUDE_KEY = "$include"
 
 
@@ -50,17 +52,30 @@ class Document:
 
     def __init__(self, text: str):
         self.text = text
-        base = _parse(_yaml(), text)
-        self.style, self.reformats = _guess_style(text, base)
-        self.yaml = _yaml(self.style)
-        self.data = _parse(self.yaml, text) if text.strip() else CommentedMap()
+        # Indentation doesn't change how YAML is read, so one parse serves every style.
+        self.data = _parse(_yaml(), text) if text.strip() else CommentedMap()
         if self.data is None:
             self.data = CommentedMap()
         if not isinstance(self.data, CommentedMap):
             raise EditError("The top level of glance.yml must be a mapping (server:, pages:, ...)")
+        self.style = _style_for(text, self.data)
+        self.yaml = _yaml(self.style)
 
     def dump(self) -> str:
-        return _dump(self.yaml, self.data)
+        out = _dump(self.yaml, self.data)
+        _remember_style(out, self.style)  # the next request with this text skips detection
+        return out
+
+    def reformats(self) -> int:
+        """How many lines would be written differently than they are now (before any edit)."""
+        if not self.text.strip():
+            return 0
+        out = _dump(self.yaml, self.data)
+        if out == self.text:
+            return 0
+        import difflib
+        ops = difflib.SequenceMatcher(None, self.text.splitlines(), out.splitlines(), autojunk=False).get_opcodes()
+        return sum(max(i2 - i1, j2 - j1) for tag, i1, i2, j1, j2 in ops if tag != "equal")
 
     # ------------------------------------------------------------ paths
 
@@ -259,25 +274,67 @@ class Document:
 
 # ---------------------------------------------------------------- style detection
 
-def _guess_style(text: str, data) -> tuple[tuple[int, int, int], int]:
-    """Pick the indentation that reproduces the file best. Returns (style, lines that would change)."""
-    if not text.strip() or data is None:
-        return STYLES[0], 0
-    best, best_changes = STYLES[0], None
-    src = text.splitlines()
-    for style in STYLES:
-        out = _dump(_yaml(style), data).splitlines()
-        if out == src:
-            return style, 0
-        changes = _changed_lines(src, out)
-        if best_changes is None or changes < best_changes:
-            best, best_changes = style, changes
-    return best, best_changes or 0
+_style_cache: "OrderedDict[str, tuple]" = OrderedDict()
 
 
-def _changed_lines(a: list[str], b: list[str]) -> int:
-    import difflib
-    return sum(1 for line in difflib.ndiff(a, b) if line[:1] in "+-")
+def _key(text: str) -> str:
+    return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()
+
+
+def _remember_style(text: str, style) -> None:
+    _style_cache[_key(text)] = style
+    _style_cache.move_to_end(_key(text))
+    while len(_style_cache) > 64:
+        _style_cache.popitem(last=False)
+
+
+def _style_for(text: str, data) -> tuple[int, int, int]:
+    """The indentation that reproduces this file. Detected once per text, then remembered.
+
+    Dumping is the slow part (tens of ms per try, much more on a small CPU), so the style is read
+    from the text first and only a few candidates are ever dumped.
+    """
+    if not text.strip():
+        return STYLES[0]
+    key = _key(text)
+    if key in _style_cache:
+        _style_cache.move_to_end(key)
+        return _style_cache[key]
+    inferred = _infer_style(text)
+    style = inferred
+    for candidate in [inferred] + [s for s in STYLES[:3] if s != inferred]:
+        if _dump(_yaml(candidate), data) == text:
+            style = candidate
+            break
+    _remember_style(text, style)
+    return style
+
+
+def _infer_style(text: str) -> tuple[int, int, int]:
+    """Read (mapping indent, list item indent, dash offset) from the most common patterns in the text."""
+    maps, offsets, gaps = Counter(), Counter(), Counter()
+    lines = [ln for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
+    for line, nxt in zip(lines, lines[1:]):
+        ind = len(line) - len(line.lstrip(" "))
+        body = line.strip()
+        col = ind
+        if body.startswith("- "):
+            after = body[2:]
+            gap = 2 + len(after) - len(after.lstrip(" "))
+            gaps[gap] += 1
+            col, body = ind + gap, after.strip()
+        if not body.endswith(":") or body.startswith(("-", "#", "'", '"')):
+            continue  # only "key:" lines with the value on the next lines tell us the indentation
+        nind = len(nxt) - len(nxt.lstrip(" "))
+        if nxt.strip().startswith("- ") or nxt.strip() == "-":
+            if nind >= col:
+                offsets[nind - col] += 1
+        elif nind > col:
+            maps[nind - col] += 1
+    mapping = maps.most_common(1)[0][0] if maps else 2
+    offset = offsets.most_common(1)[0][0] if offsets else 2
+    gap = gaps.most_common(1)[0][0] if gaps else 2
+    return mapping, offset + gap, offset
 
 
 # ---------------------------------------------------------------- paths

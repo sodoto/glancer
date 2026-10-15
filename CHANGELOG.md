@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 (2026-10-15)
+- Much faster: every click could take seconds on a small LXC when glance.yml had even one line written
+  differently than Glancer would write it (extra spaces, for example). Glancer re-detected the file's
+  indentation on each request by writing the whole file out up to 30 times. It now reads the indentation
+  from the file once and remembers it: about 20x faster.
+- With `GLANCER_PASSWORD` set, each request no longer re-checks the password with the (deliberately slow) hash.
+
 ## 0.1.1 (2026-10-15)
 - Ready-made Docker image: `ghcr.io/sodoto/glancer:latest` (for regular PCs/servers and ARM boards like a
   Raspberry Pi). No more building it yourself: the compose file and the install steps use the image, and

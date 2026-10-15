@@ -28,7 +28,7 @@ def edited(text: str, *ops) -> str:
 @pytest.mark.parametrize("text", [EXAMPLE, HOMELAB], ids=["glance-example", "homelab"])
 def test_load_and_dump_is_byte_identical(text):
     doc = Document(text)
-    assert doc.reformats == 0
+    assert doc.reformats() == 0
     assert doc.dump() == text
 
 
@@ -39,6 +39,24 @@ def test_load_and_dump_is_byte_identical(text):
 ])
 def test_other_indentation_styles_survive(text):
     assert Document(text).dump() == text
+
+
+def test_hand_edited_file_is_fast_and_only_its_odd_lines_change(monkeypatch):
+    # A real glance.yml often has a few lines Glancer would write differently. That must not make
+    # every request slow (it used to dump the file in 30 styles each time) or change other lines.
+    import app.yamldoc as yd
+    odd = EXAMPLE.replace("  - name: Home\n", "  - name:   Home\n")
+    yd._style_cache.clear()
+    dumps = []
+    real = yd._dump
+    monkeypatch.setattr(yd, "_dump", lambda y, data: dumps.append(1) or real(y, data))
+    doc = Document(odd)
+    assert doc.style == (2, 4, 2) and len(dumps) <= 4
+    assert changed(odd, doc.dump()) == ["-   - name:   Home", "+   - name: Home"]
+    draft = doc.dump()
+    dumps.clear()
+    Document(draft)  # the next request, on the draft: no detection at all
+    assert dumps == []
 
 
 # ---------------------------------------------------------------- the official example

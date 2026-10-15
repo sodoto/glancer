@@ -44,21 +44,23 @@ def verify_password(password: str, stored: str | None) -> bool:
 # ------------------------------------------------------------------ the account
 
 _env_hash: str | None = None
+_env_source: bytes | None = None  # sha256 of the GLANCER_PASSWORD value _env_hash was made from
 
 
 def credentials() -> tuple[str | None, str | None]:
     """(username, password hash). GLANCER_PASSWORD (plain or scrypt$ hash) overrides the saved login."""
-    global _env_hash
+    global _env_hash, _env_source
     env = os.environ.get("GLANCER_PASSWORD")
     account = load_account()
     if env:
         if is_hashed(env):
             _env_hash = env
-        elif not _env_hash or not verify_password(env, _env_hash):
-            # Kept only in memory. The salt is fixed per installation, so the hash (which signs the
-            # session cookies) stays the same across restarts and nobody is signed out by one.
+        elif _env_source != hashlib.sha256(env.encode()).digest():
+            # Hashed once (scrypt is deliberately slow), kept only in memory. The salt is fixed per
+            # installation, so the hash (which signs the session cookies) survives restarts.
             salt = hmac.new(_secret(), b"GLANCER_PASSWORD salt", hashlib.sha256).digest()[:16]
             _env_hash = hash_password(env, salt)
+            _env_source = hashlib.sha256(env.encode()).digest()
         return account.get("username") or "admin", _env_hash
     return account.get("username"), account.get("password_hash")
 

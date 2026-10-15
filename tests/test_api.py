@@ -48,10 +48,12 @@ def test_env_password_survives_restart(config_dir, monkeypatch):
     monkeypatch.setenv("GLANCER_USERNAME", "admin")
     monkeypatch.setenv("GLANCER_PASSWORD", "from-the-env")
     monkeypatch.setattr(auth, "_env_hash", None)
+    monkeypatch.setattr(auth, "_env_source", None)
     c = TestClient(app)
     assert c.get("/api/auth-state").json()["setup_needed"] is False
     assert c.post("/api/login", json={"username": "admin", "password": "from-the-env"}).status_code == 200
     monkeypatch.setattr(auth, "_env_hash", None)  # what a restart does
+    monkeypatch.setattr(auth, "_env_source", None)
     assert c.get("/api/config").status_code == 200  # still signed in
 
 
