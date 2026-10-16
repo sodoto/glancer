@@ -199,16 +199,46 @@ const Editor = (() => {
       side.append(h("div", { class: "help", style: "margin:0 8px" }, "All pages come from ", h("code", {}, t.pages_include),
         ". Glancer shows included files read-only."));
     }
+    const pagesBox = h("div", { class: "side-pages" });
     t.pages.forEach((p, i) => {
       const active = S.section === null && S.page === i;
-      side.append(h("div", { class: "side-item" + (active ? " active" : ""), tabindex: 0,
+      const item = h("div", { class: "side-item" + (active ? " active" : ""), tabindex: 0, draggable: "true",
+        title: "Drag to reorder pages",
         onclick: () => { S.section = null; S.page = i; render(); },
         onkeydown: (e) => { if (e.key === "Enter") { S.section = null; S.page = i; render(); } } },
         h("span", { class: "label" }, p.include ? h("span", { class: "muted" }, "📄 " + p.include) : (p.name || h("span", { class: "muted" }, "(no name)"))),
         h("span", { class: "tools" },
           h("button", { class: "mini", title: "Move up", disabled: i === 0, onclick: (e) => { e.stopPropagation(); movePage(i, -1); } }, "↑"),
-          h("button", { class: "mini", title: "Move down", disabled: i === t.pages.length - 1, onclick: (e) => { e.stopPropagation(); movePage(i, 1); } }, "↓"))));
+          h("button", { class: "mini", title: "Move down", disabled: i === t.pages.length - 1, onclick: (e) => { e.stopPropagation(); movePage(i, 1); } }, "↓")));
+      item.addEventListener("dragstart", (e) => startDrag(e, { kind: "page", path: ["pages", i] }, item));
+      // a widget dropped here moves to this page
+      const target = pageDropTarget(p);
+      item.addEventListener("dragover", (e) => {
+        if (!drag || drag.kind !== "widget" || !target || startsWith(target, drag.path)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        dropLine.remove();
+        item.classList.add("drop-target");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("drop-target"));
+      item.addEventListener("drop", async (e) => {
+        if (!drag || drag.kind !== "widget" || !target) return;
+        e.preventDefault();
+        e.stopPropagation();
+        clearDrop();
+        if (samePath(drag.path.slice(0, -1), target)) return;
+        const col = p.columns.find(c => !c.include);
+        await dropMove(target, col.widgets.length);
+        toast(`Moved to the page “${p.name}” (first column)`);
+      });
+      pagesBox.append(item);
     });
+    dropZone(pagesBox, {
+      accepts: () => drag && drag.kind === "page",
+      items: () => [...pagesBox.children].filter(x => x.classList.contains("side-item")),
+      drop: (slot) => dropPage(slot),
+    });
+    side.append(pagesBox);
     if (!t.pages.length && !t.pages_include) side.append(h("div", { class: "help", style: "margin:4px 8px" }, "No pages yet."));
 
     side.append(h("h3", {}, "Settings"));
@@ -311,8 +341,16 @@ const Editor = (() => {
         canAdd("small") ? h("button", { class: "small", onclick: () => addColumn(p, "small") }, "+ Small column") : null,
         canAdd("full") ? h("button", { class: "small", onclick: () => addColumn(p, "full") }, "+ Full column") : null));
     }
+    dropZone(cols, {
+      horizontal: true,
+      accepts: () => drag && drag.kind === "column" && samePath(drag.page, p.path),
+      items: () => [...cols.children].filter(x => x.classList.contains("column")),
+      before: () => cols.querySelector(":scope > .add-col"),
+      drop: (slot) => dropMove(p.path.concat(["columns"]), slot),
+    });
     parts.push(cols);
     parts.push(h("p", { class: "help", style: "margin-top:14px" },
+      "Drag a widget to move it (also onto a page on the left), and ⠿ to reorder columns. ",
       "Glance allows up to 3 columns (2 on slim pages) with 1 or 2 full columns. A small column is 300px wide; full columns share the rest."));
     return h("div", {}, parts);
   }
@@ -331,44 +369,50 @@ const Editor = (() => {
     const without = sizes.filter((_, i) => i !== ci);
     const delProblem = layoutError(without, width);
     const listPath = c.path.concat(["widgets"]);
-    return h("div", { class: "column " + (c.size === "small" ? "small" : "full") },
-      h("div", { class: "col-head" }, sizeSel, h("span", { class: "spacer" }),
+    const handle = h("span", { class: "drag-handle", draggable: "true", title: "Drag to reorder the columns" }, "⠿");
+    const colEl = h("div", { class: "column " + (c.size === "small" ? "small" : "full") },
+      h("div", { class: "col-head" }, handle, sizeSel, h("span", { class: "spacer" }),
         h("button", { class: "mini", title: "Move column left", disabled: ci === 0, onclick: () => edit({ op: "move", path: c.path, to: p.path.concat(["columns"]), index: ci - 1 }) }, "←"),
         h("button", { class: "mini", title: "Move column right", disabled: ci === p.columns.length - 1, onclick: () => edit({ op: "move", path: c.path, to: p.path.concat(["columns"]), index: ci + 1 }) }, "→"),
         h("button", { class: "mini danger", title: delProblem ? `Can't delete: ${delProblem}` : "Delete column", disabled: !!delProblem,
           onclick: () => deleteNode(c.path, c.widgets.length ? `this column and its ${c.widgets.length} widget(s)` : "this empty column") }, "✕")),
-      widgetList(c.widgets, listPath, { page: p, ci }));
+      widgetList(c.widgets, listPath));
+    handle.addEventListener("dragstart", (e) => startDrag(e, { kind: "column", path: c.path, page: p.path, image: colEl }, colEl));
+    return colEl;
   }
 
-  function widgetList(widgets, listPath, colCtx) {
-    const box = h("div");
+  function widgetList(widgets, listPath) {
+    const box = h("div", { class: "wlist" });
     if (!widgets.length) box.append(h("div", { class: "empty-col" }, "No widgets"));
-    widgets.forEach((w, i) => box.append(widgetCard(w, i, widgets.length, listPath, colCtx)));
+    widgets.forEach((w, i) => box.append(widgetCard(w, i, widgets.length, listPath)));
     box.append(h("button", { class: "small add-widget", onclick: () => addWidget(listPath) }, "+ Add widget"));
+    dropZone(box, {
+      accepts: () => canDropWidget(listPath),
+      items: () => [...box.children].filter(x => x.classList.contains("wcard")),
+      before: () => box.querySelector(":scope > .add-widget"),
+      drop: (slot) => dropMove(listPath, slot),
+    });
     return box;
   }
 
-  function widgetCard(w, i, count, listPath, colCtx) {
+  function widgetCard(w, i, count, listPath) {
     const move = (to, index) => edit({ op: "move", path: w.path, to, index });
     const tools = h("span", { class: "tools" },
       h("button", { class: "mini", title: "Move up", disabled: i === 0, onclick: () => move(listPath, i - 1) }, "↑"),
-      h("button", { class: "mini", title: "Move down", disabled: i === count - 1, onclick: () => move(listPath, i + 1) }, "↓"));
-    if (colCtx) {  // move to the neighbouring column
-      const cols = colCtx.page.columns;
-      const left = cols[colCtx.ci - 1], right = cols[colCtx.ci + 1];
-      tools.append(
-        h("button", { class: "mini", title: "Move to the column on the left", disabled: !left || !!left.include,
-          onclick: () => move(left.path.concat(["widgets"]), left.widgets.length) }, "←"),
-        h("button", { class: "mini", title: "Move to the column on the right", disabled: !right || !!right.include,
-          onclick: () => move(right.path.concat(["widgets"]), right.widgets.length) }, "→"));
-    }
-    tools.append(h("button", { class: "mini", title: "Move to another column, group, page or the head widgets", onclick: () => moveDialog(w) }, "Move…"));
+      h("button", { class: "mini", title: "Move down", disabled: i === count - 1, onclick: () => move(listPath, i + 1) }, "↓"),
+      h("button", { class: "mini", title: "Move to another column, group, page or the head widgets", onclick: () => moveDialog(w) }, "Move…"));
+    const draggable = (card) => {
+      card.draggable = true;
+      card.title = "Drag to move";
+      card.addEventListener("dragstart", (e) => startDrag(e, { kind: "widget", path: w.path, type: w.type }, card));
+      return card;
+    };
     if (w.include) {
       tools.append(h("button", { class: "mini danger", title: "Remove the $include line", onclick: () => deleteNode(w.path, `the line that includes ${w.include}`) }, "✕"));
-      return h("div", { class: "wcard" },
+      return draggable(h("div", { class: "wcard" },
         h("div", { class: "top" }, h("span", { class: "wtype inc" }, "included"),
           h("span", { class: "wtitle", onclick: () => viewFile(S.cfg.files.find(f => f.name === w.include) || { name: w.include }) }, "📄 " + w.include)),
-        h("div", { class: "wsum" }, "Read-only in Glancer 0.1"), tools);
+        h("div", { class: "wsum" }, "Read-only in Glancer 0.1"), tools));
     }
     tools.append(
       h("button", { class: "mini", title: "Edit", onclick: () => editWidget(w.path) }, "Edit"),
@@ -384,9 +428,115 @@ const Editor = (() => {
     card.append(tools);
     if (w.children) {
       const childPath = w.path.concat(["widgets"]);
-      card.append(h("div", { class: "children" }, widgetList(w.children, childPath, null)));
+      card.append(h("div", { class: "children" }, widgetList(w.children, childPath)));
     }
-    return card;
+    return draggable(card);
+  }
+
+  // ---------------------------------------------------------------- drag and drop
+  //
+  // Widgets can be dropped in any widget list (columns, head widgets, groups) or on a page in the
+  // sidebar; columns are reordered by their ⠿ handle, pages by dragging them in the sidebar.
+
+  let drag = null;  // { kind: "widget" | "column" | "page", path, type?, page? }
+  const dropLine = h("div", { class: "drop-line" });
+
+  function startDrag(e, info, el) {
+    drag = info;
+    e.stopPropagation();  // a widget inside a group: drag the widget, not the group
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "glancer");  // some browsers only start a drag with data
+    if (info.image) e.dataTransfer.setDragImage(info.image, 24, 16);
+    requestAnimationFrame(() => el.classList.add("dragging"));
+  }
+
+  function clearDrop() {
+    dropLine.remove();
+    dropLine.className = "drop-line";
+    document.querySelectorAll(".drop-target").forEach(x => x.classList.remove("drop-target"));
+  }
+
+  document.addEventListener("dragend", () => {
+    drag = null;
+    clearDrop();
+    document.querySelectorAll(".dragging").forEach(x => x.classList.remove("dragging"));
+  });
+  // A drag over something that isn't a drop zone: hide the marker.
+  document.addEventListener("dragover", (e) => { if (!e.defaultPrevented) clearDrop(); });
+
+  // Which slot (0 = before the first item) the pointer is in.
+  function slotIndex(items, e, horizontal) {
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      if (horizontal ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2) return i;
+    }
+    return items.length;
+  }
+
+  // Make `box` accept drops. A zone that doesn't accept the current drag lets it bubble to the
+  // zone around it (e.g. a group dragged over another group's list lands in the column instead).
+  function dropZone(box, { accepts, items, before, drop, horizontal = false }) {
+    let slot = 0;
+    box.addEventListener("dragover", (e) => {
+      if (!drag || !accepts()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+      const list = items();
+      slot = slotIndex(list, e, horizontal);
+      dropLine.className = "drop-line" + (horizontal ? " vertical" : "");
+      const next = list[slot] || (before && before()) || null;
+      if (dropLine.parentNode !== box || dropLine.nextSibling !== next) box.insertBefore(dropLine, next);
+    });
+    box.addEventListener("drop", (e) => {
+      if (!drag || !accepts()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clearDrop();
+      const at = slot;
+      Promise.resolve(drop(at)).catch(() => {});
+    });
+  }
+
+  function canDropWidget(listPath) {
+    if (!drag || drag.kind !== "widget") return false;
+    if (startsWith(listPath, drag.path)) return false;  // not into itself
+    if (CONTAINERS.includes(drag.type) && inContainer(listPath)) return false;  // no group inside a group
+    return true;
+  }
+
+  // The server places the item after taking it out of its old spot, so a later slot in the same list is one less.
+  function finalIndex(from, toList, slot) {
+    const sameList = samePath(from.slice(0, -1), toList);
+    const fromIdx = from[from.length - 1];
+    return sameList && slot > fromIdx ? slot - 1 : slot;
+  }
+
+  async function dropMove(toList, slot) {
+    const from = drag && drag.path;
+    if (!from) return;
+    const index = finalIndex(from, toList, slot);
+    if (samePath(from.slice(0, -1), toList) && index === from[from.length - 1]) return;  // dropped where it was
+    await edit({ op: "move", path: from, to: toList, index });
+  }
+
+  async function dropPage(slot) {
+    const from = drag.path[1];
+    const to = finalIndex(drag.path, ["pages"], slot);
+    if (to === from) return;
+    await edit({ op: "move", path: ["pages", from], to: ["pages"], index: to });
+    // keep the same page selected
+    if (S.page === from) S.page = to;
+    else if (from < S.page && to >= S.page) S.page -= 1;
+    else if (from > S.page && to <= S.page) S.page += 1;
+    render();
+  }
+
+  // A widget dropped on a page in the sidebar goes to the bottom of that page's first column.
+  function pageDropTarget(p) {
+    if (!p || p.include || p.raw || p.columns_include) return null;
+    const col = (p.columns || []).find(c => !c.include);
+    return col ? col.path.concat(["widgets"]) : null;
   }
 
   // ---------------------------------------------------------------- move to…

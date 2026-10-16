@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 (2026-10-16)
+- Drag and drop. Drag a widget card anywhere: another spot in its column, another column, the head widgets,
+  into or out of a group (as a tab), or onto a page in the sidebar to send it to that page. A blue line shows
+  where it will land. Drag ⠿ in a column's header to reorder columns, and drag pages in the sidebar to reorder
+  them. Glance's rules still apply (no group inside a group).
+- The ← → buttons on widget cards are gone (drag, or use **Move…**). ↑ ↓ and Move… stay for keyboards,
+  phones and tablets.
+
 ## 0.1.3 (2026-10-15)
 - Much less scrolling in widget forms. Entries in a list (monitor sites, bookmarks links, feeds, markets…)
   are folded to one line showing their title and address; click one to open it, or use "unfold all". New

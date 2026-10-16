@@ -7,8 +7,9 @@ Add pages, columns and widgets with forms instead of editing `glance.yml` by han
 
 - **Edits your real `glance.yml`, in place.** Your comments, key order, quotes, `${ENV}` placeholders and
   `$include` lines stay exactly as they are. Only the lines you change are rewritten, and you see them first.
-- **Pages, columns and widgets** in a visual layout: add, edit, delete, move up/down, move a widget to the
-  next column. Glance's column rules are checked as you go (up to 3 columns, 2 on slim pages, 1 or 2 of them full).
+- **Pages, columns and widgets** in a visual layout: add, edit and delete them, and **drag and drop** widgets
+  between columns, groups, head widgets and pages, columns to reorder them, and pages in the sidebar. Glance's
+  rules are checked as you go (up to 3 columns, 2 on slim pages, 1 or 2 of them full; no group inside a group).
 - **Forms** for the widgets most homelabs use: bookmarks, monitor, Docker containers, search, RSS, weather, markets,
   calendar and clock, plus the common settings (title, title link, cache, CSS class, hide header).
   Every widget also has a **YAML** tab, and widget types or settings Glancer doesn't know are kept untouched.
@@ -76,7 +77,9 @@ Create the login right after installing: until then, anyone who can reach the pa
 
 ### 4. Edit, review, save
 
-- Pick a page on the left, then use **+ Add widget**, **Edit**, the arrows, or the column controls.
+- Pick a page on the left, then use **+ Add widget**, **Edit**, or drag widgets where you want them
+  (drop one on a page on the left to send it there). Drag ⠿ to reorder columns. On a phone or tablet, use
+  the arrows and **Move…** instead.
 - Changes collect in a draft (they survive a page reload, and **Undo** / Ctrl+Z works).
 - Click **Review & save** at the bottom: you see exactly which lines change and whether Glance will accept them.
   Click **Save to glance.yml**. Glance reloads its config on its own a moment later.
