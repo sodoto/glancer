@@ -14,4 +14,4 @@ services:
       - ./glancer-data:/data
     environment:
       - GLANCER_BACKUPS=30  # how many backups of glance.yml to keep
-      # - GLANCE_URL=http://192.168.1.50:8080  # optional: adds an "Open Glance" button
+      # - GLANCE_URL=http://192.168.1.50:8080  # optional: can also be entered in Glancer (Preview)

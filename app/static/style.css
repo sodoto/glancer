@@ -165,6 +165,31 @@ textarea.code.tall { height: calc(100vh - 300px); min-height: 300px; }
 .wcard .children .wcard { margin-bottom: 6px; }
 button.add-widget { width: 100%; justify-content: center; border-style: dashed; color: var(--muted); background: transparent; }
 button.add-widget:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+/* live preview */
+.work { display: flex; gap: 18px; align-items: flex-start; }
+.work > #editorView { flex: 1 1 auto; min-width: 0; }
+.preview { flex: 0 0 42%; min-width: 340px; position: sticky; top: 12px; height: calc(100vh - 110px);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.preview-head { display: flex; gap: 6px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.preview-head .spacer { flex: 1; }
+.preview-title { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preview-frame { flex: 1; position: relative; overflow: hidden; background: var(--panel-2); }
+.preview-frame iframe { position: absolute; top: 0; left: 0; border: 0; transform-origin: 0 0; background: #fff; }
+.preview-hint { margin: 0; padding: 6px 10px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--border); }
+.preview-setup { padding: 14px; }
+.preview-setup p { margin: 0 0 12px; font-size: 13.5px; }
+.preview .notice { margin: 8px; }
+#previewBtn.active { background: var(--blue-bg); color: var(--accent); border-color: var(--accent); }
+.mini.btn { display: inline-flex; text-decoration: none; }
+/* with the preview open, the page's columns stack so they stay readable */
+.work.with-preview .columns { flex-wrap: wrap; }
+.work.with-preview .column.small { flex: 1 1 240px; }
+.work.with-preview .column.full { flex: 1 1 300px; }
+@media (max-width: 1100px) {
+  .work { flex-direction: column; align-items: stretch; }
+  .preview { flex: none; width: 100%; min-width: 0; height: 70vh; position: static; }
+}
+
 /* drag and drop */
 .wcard[draggable="true"] .top { cursor: grab; }
 .wcard.dragging, .column.dragging, .side-item.dragging { opacity: .35; }

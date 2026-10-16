@@ -43,6 +43,30 @@ def load_account() -> dict:
     return data
 
 
+def _read_file() -> dict:
+    try:
+        data = json.loads(account_file().read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def glance_url() -> tuple[str, bool]:
+    """(Glance's address, whether it comes from GLANCE_URL). Used for the preview and "Open Glance"."""
+    if settings.glance_url:
+        return settings.glance_url, True
+    return str(_read_file().get("glance_url") or ""), False
+
+
+def save_glance_url(url: str) -> None:
+    data = _read_file()
+    if url:
+        data["glance_url"] = url
+    else:
+        data.pop("glance_url", None)
+    save_account(data)
+
+
 def save_account(data: dict) -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     tmp = account_file().with_suffix(".tmp")

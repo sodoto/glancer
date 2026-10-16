@@ -49,7 +49,7 @@ async function loadConfig({ keepDraft = true } = {}) {
     } catch { /* stored draft no longer parses: drop it */ }
   }
   $("version").textContent = "v" + cfg.version;
-  if (cfg.glance_url) { $("openGlance").href = cfg.glance_url; $("openGlance").hidden = false; }
+  Preview.updateOpenLink();
   storeDraft();
   renderAll();
 }
@@ -186,6 +186,7 @@ const Editor = (() => {
     const pages = S.tree.pages;
     if (S.section === null && S.page >= pages.length) S.page = Math.max(0, pages.length - 1);
     el.replaceChildren(h("div", { class: "layout" }, sidebar(), h("div", {}, S.section !== null ? sectionView(S.section) : pageView())));
+    Preview.draw();  // follow the selected page
   }
 
   // ---------------------------------------------------------------- sidebar
@@ -852,6 +853,7 @@ async function reviewAndSave() {
       storeDraft();
       Modal.forceClose();
       renderAll();
+      Preview.afterSave();
       toast(res.backup ? "Saved. Glance reloads it by itself. Previous version kept as a backup." : "Saved.", 5000);
     } catch (e) {
       msg.textContent = e.message;

@@ -18,6 +18,7 @@
       <a href="#backups" id="navBackups">Backups</a>
     </nav>
     <span class="spacer"></span>
+    <button class="small" id="previewBtn" title="Show your real Glance next to the editor">Preview</button>
     <a class="btn small" id="openGlance" target="_blank" rel="noopener" hidden>Open Glance ↗</a>
     <span class="meta" id="version"></span>
     <button class="small" id="accountBtn">Account</button>
@@ -25,7 +26,10 @@
   </header>
 
   <div id="notices"></div>
-  <main id="editorView"></main>
+  <div class="work">
+    <main id="editorView"></main>
+    <aside class="preview" id="previewPanel" hidden></aside>
+  </div>
   <main id="rawView" hidden></main>
   <main id="backupsView" hidden></main>
 </div>
@@ -60,6 +64,7 @@
 <script src="static/common.js"></script>
 <script src="static/forms.js"></script>
 <script src="static/editor.js"></script>
+<script src="static/preview.js"></script>
 <script src="static/views.js"></script>
 </body>
 </html>

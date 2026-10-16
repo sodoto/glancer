@@ -77,6 +77,7 @@ const Views = (() => {
     try {
       await api("api/backups/" + encodeURIComponent(b.name) + "/restore", "POST", {});
       await loadConfig({ keepDraft: false });
+      Preview.afterSave();
       toast("Restored. Glance reloads it by itself.");
       renderBackups();
     } catch (e) { UI.alert("Restore failed", e.message); }
@@ -131,6 +132,7 @@ const Views = (() => {
     $("navBackups").classList.toggle("active", v === "backups");
     if (v === "raw") renderRaw();
     if (v === "backups") renderBackups();
+    Preview.draw();  // only next to the editor
   }
 
   // After every draft change: keep the raw tab in step (unless the user is typing in it).

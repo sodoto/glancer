@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import auth, store, symbols
-from .config import VERSION, load_account, save_account, settings
+from .config import VERSION, glance_url, load_account, save_account, save_glance_url, settings
 from .glance import WIDGET_TYPES, check, layout_error, list_includes, tree
 from .yamldoc import Document, EditError, NotPlain, to_plain
 
@@ -224,7 +224,7 @@ async def get_config():
     out = {
         "version": VERSION, "file": str(main), "dir": str(settings.config_dir), "exists": loaded.exists,
         "dir_exists": settings.config_dir.is_dir(), "sha": loaded.sha, "text": loaded.text,
-        "files": list_includes(main) if loaded.exists else [], "glance_url": settings.glance_url,
+        "files": list_includes(main) if loaded.exists else [], "glance_url": glance_url()[0], "glance_url_from_env": glance_url()[1],
         "widget_types": WIDGET_TYPES, "backups_kept": settings.backups,
         "tree": None, "parse_error": None, "reformats": 0,
     }
@@ -361,6 +361,19 @@ async def save(body: dict = Depends(json_body)):
     except OSError as exc:
         raise HTTPException(500, f"Could not write {store.main_path()}: {exc}")
     return result
+
+
+# ---------------------------------------------------------------- Glance's address (preview, "Open Glance")
+
+@app.post("/api/glance-url", dependencies=[Depends(require_auth)])
+async def set_glance_url(body: dict = Depends(json_body)):
+    if glance_url()[1]:
+        raise HTTPException(409, "The address is set with GLANCE_URL. Change it there.")
+    url = str(body.get("url") or "").strip().rstrip("/")
+    if url and not re.match(r"^https?://[^\s/]+", url):
+        raise HTTPException(422, "Enter the full address, starting with http:// or https://, e.g. http://192.168.1.50:8080")
+    save_glance_url(url)
+    return {"glance_url": url}
 
 
 # ---------------------------------------------------------------- markets symbol suggestions

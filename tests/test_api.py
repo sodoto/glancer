@@ -57,6 +57,18 @@ def test_env_password_survives_restart(config_dir, monkeypatch):
     assert c.get("/api/config").status_code == 200  # still signed in
 
 
+def test_glance_url_setting(client):
+    assert client.get("/api/config").json()["glance_url"] == ""
+    assert client.post("/api/glance-url", json={"url": "192.168.1.5:8080"}).status_code == 422
+    assert client.post("/api/glance-url", json={"url": "http://192.168.1.5:8080/"}).json() == {"glance_url": "http://192.168.1.5:8080"}
+    cfg = client.get("/api/config").json()
+    assert cfg["glance_url"] == "http://192.168.1.5:8080" and cfg["glance_url_from_env"] is False
+    # the login in the same file is untouched
+    fresh = TestClient(app)
+    assert fresh.post("/api/login", json={"username": "admin", "password": "correct horse"}).status_code == 200
+    assert client.post("/api/glance-url", json={"url": ""}).json() == {"glance_url": ""}
+
+
 def test_post_requires_json(client):
     assert client.post("/api/apply", data={"text": "x"}).status_code == 415
 

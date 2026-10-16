@@ -110,7 +110,7 @@ All optional, set under `environment:` in the compose file.
 | Variable | Default | What it does |
 |---|---|---|
 | `GLANCER_BACKUPS` | `30` | How many backups of `glance.yml` to keep. |
-| `GLANCE_URL` | | Your Glance address, e.g. `http://192.168.1.50:8080`. Adds an **Open Glance** button. |
+| `GLANCE_URL` | | Your Glance address, e.g. `http://192.168.1.50:8080`, for the preview and the **Open Glance** button. You can also enter it in Glancer (**Preview**); this variable overrides that. |
 | `GLANCE_CONFIG_FILE` | `glance.yml` | The file name inside the config folder, if yours is different. |
 | `GLANCER_USERNAME` / `GLANCER_PASSWORD` | | Set the login from the environment instead of the first-start page. The password can be plain text or a `scrypt$...` hash. |
 | `GLANCE_CONFIG_DIR` | `/glance-config` | Where the config folder is mounted inside the container. |
@@ -129,6 +129,11 @@ All optional, set under `environment:` in the compose file.
   outside service Glancer contacts; without internet access you simply get no suggestions.
 - **YAML anchors** (`&name`, `*name`, `<<:`): widgets that use them are edited in the YAML tab only, so the
   anchors stay intact.
+- **Preview:** click **Preview** at the top to see your real Glance next to the editor, on the page you are
+  editing. The first time, enter the address you open Glance with. It shows what is saved and reloads after each
+  save. If it stays blank, your reverse proxy probably forbids showing Glance inside another page (an
+  `X-Frame-Options` or `frame-ancestors` header on Glance's site). If Glancer is opened over https://, Glance's
+  address must be https:// too.
 - **Raw YAML** tab: the whole draft as text, for anything the editor doesn't cover.
 - **Forgot your password?** Delete `glancer.json` in the data folder and restart the container. The first-start
   page appears again.

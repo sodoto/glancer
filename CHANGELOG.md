@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 (2026-10-16)
+- Live preview: click **Preview** to see your real Glance next to the editor, on the page you are editing.
+  It is drawn at desktop width and scaled to fit, so you see Glance's real layout, and it reloads by itself
+  after each save or restore. It shows what is saved.
+- Glance's address can now be entered in Glancer (the first time you open the preview, or with ⚙ in it);
+  `GLANCE_URL` still works and takes precedence. It is also used by the **Open Glance** button.
+
 ## 0.2.0 (2026-10-16)
 - Drag and drop. Drag a widget card anywhere: another spot in its column, another column, the head widgets,
   into or out of a group (as a tab), or onto a page in the sidebar to send it to that page. A blue line shows
