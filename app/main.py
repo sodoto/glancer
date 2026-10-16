@@ -10,7 +10,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import auth, npm, store, symbols
+from . import auth, icons, npm, store, symbols
 from .config import (VERSION, glance_url, load_account, npm_settings, save_account, save_glance_url,
                      save_npm_settings, settings)
 from .glance import WIDGET_TYPES, check, layout_error, list_includes, tree
@@ -468,6 +468,16 @@ async def check_target(body: dict = Depends(json_body)):
         return {"ok": True, "message": f"{host}:{port} answers."}
     except (OSError, asyncio.TimeoutError) as exc:
         return {"ok": False, "message": f"Nothing answers at {host}:{port} from Glancer's machine ({exc.__class__.__name__})."}
+
+
+# ---------------------------------------------------------------- icon search
+
+@app.get("/api/icons", dependencies=[Depends(require_auth)])
+async def icon_search(q: str = ""):
+    try:
+        return {"results": await icons.search(q)}
+    except icons.IconsUnavailable as exc:
+        raise HTTPException(502, str(exc))
 
 
 # ---------------------------------------------------------------- markets symbol suggestions

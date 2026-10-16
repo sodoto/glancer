@@ -153,9 +153,13 @@ All optional, set under `environment:` in the compose file.
 - **Changed the file by hand while Glancer was open?** Glancer notices when you save and tells you, instead of
   silently overwriting your edit.
 - **`${ENV}` values** are shown and saved as written. Glance fills them in when it reads the file.
+- **Icon search:** in any Icon field, type a name (e.g. `jellyfin`) to search the four icon libraries Glance
+  supports (selfh.st `sh:`, Dashboard Icons `di:`, Simple Icons `si:`, Material Design `mdi:`), with previews.
+  Glancer downloads the libraries' lists once a week from cdn.jsdelivr.net (where Glance loads the icons from too)
+  and keeps them in its data folder.
 - **Markets symbol suggestions:** when you type in a market's Symbol field, Glancer asks Yahoo Finance (the
   service Glance gets prices from) for matching symbols. Only the text you type is sent. Besides Glance's
-  and NPM's addresses that you enter, it is the only outside service Glancer contacts; without internet access you simply get no suggestions.
+  and NPM's addresses that you enter and the icon lists, it is the only outside service Glancer contacts; without internet access you simply get no suggestions.
 - **YAML anchors** (`&name`, `*name`, `<<:`): widgets that use them are edited in the YAML tab only, so the
   anchors stay intact.
 - **Preview:** click **Preview** at the top to see your real Glance next to the editor, on the page you are

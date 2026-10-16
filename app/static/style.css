@@ -167,6 +167,17 @@ textarea.code.tall { height: calc(100vh - 300px); min-height: 300px; }
 .wcard .children .wcard { margin-bottom: 6px; }
 button.add-widget { width: 100%; justify-content: center; border-style: dashed; color: var(--muted); background: transparent; }
 button.add-widget:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+/* icons */
+.icon-row { display: flex; gap: 6px; align-items: center; }
+.icon-row input { flex: 1; }
+.icon-box { flex: 0 0 34px; height: 34px; border: 1px solid var(--border); border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; background: var(--panel-2); }
+.icon-box.broken { border-color: var(--red); }
+.grid > .field:last-child .suggest { left: auto; right: 0; }  /* a field at the right edge opens its list leftwards */
+.icon-preview { max-width: 22px; max-height: 22px; }
+.suggest-img { width: 20px; height: 20px; object-fit: contain; flex: 0 0 20px; align-self: center; }
+@media (prefers-color-scheme: dark) { .icon-invert { filter: invert(1); } }
+
 /* add app + settings */
 .test-result { margin-top: 10px; font-size: 13px; padding: 7px 10px; border-radius: 8px; }
 .test-result.ok { background: var(--green-bg); color: var(--green); }
@@ -246,11 +257,11 @@ ol.steps li { margin: 4px 0; }
 .list-field { margin-top: 12px; }
 .list-field > .list-label { font-size: 12.5px; font-weight: 600; margin: 0 0 6px; }
 .suggest-field { position: relative; }
-.suggest { position: absolute; left: 0; right: 0; z-index: 25; margin-top: 2px; background: var(--panel); border: 1px solid var(--border);
+.suggest { position: absolute; left: 0; right: 0; width: max(100%, 340px); z-index: 25; margin-top: 2px; background: var(--panel); border: 1px solid var(--border);
   border-radius: 8px; box-shadow: 0 10px 24px rgba(0,0,0,.18); max-height: 280px; overflow-y: auto; min-width: 260px; }
 .suggest-item { padding: 6px 10px; cursor: pointer; font-size: 13px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
 .suggest-item:hover, .suggest-item.active { background: var(--blue-bg); }
-.suggest-item small { color: var(--muted); font-size: 11.5px; margin-left: auto; }
+.suggest-item small { color: var(--muted); font-size: 11.5px; margin-left: auto; white-space: nowrap; }
 .suggest-msg { padding: 7px 10px; font-size: 12.5px; color: var(--muted); }
 details.more { margin-top: 10px; }
 details.more > summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--muted); width: max-content; }

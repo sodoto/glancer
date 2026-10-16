@@ -3,7 +3,9 @@
 
 const TARGETS = [["_blank", "_blank (new tab)"], ["_self", "_self (same tab)"], ["_parent", "_parent"], ["_top", "_top"]];
 const HOUR_FORMATS = [["12h", "12h"], ["24h", "24h"]];
-const ICON_HINT = "si:, sh:, di: or mdi: icon name, or an image URL. Example: sh:jellyfin";
+const ICON_HINT = "Type a name to search icons, or enter si:, sh:, di:, mdi: or an image URL";
+// Icon fields search the icon libraries Glance supports and show the chosen icon.
+const ICON_FIELD = { key: "icon", label: "Icon", hint: ICON_HINT, placeholder: "e.g. jellyfin", suggest: (q) => suggestIcons(q), iconPreview: true };
 
 // Rarely needed settings: shown under a folded "More options".
 const more = (...fields) => fields.map(f => ({ ...f, advanced: true }));
@@ -35,7 +37,7 @@ const WIDGET_FORMS = {
         { key: "links", label: "Links", type: "list", item: "Link", titleKey: "title", required: true, subtitle: (l) => host(l.url), fields: [
           { key: "title", label: "Title", required: true },
           { key: "url", label: "URL", required: true, placeholder: "https://…" },
-          { key: "icon", label: "Icon", hint: ICON_HINT },
+          ICON_FIELD,
           ...more({ key: "description", label: "Description" }),
           ...LINK_OPTIONS,
         ] },
@@ -47,7 +49,7 @@ const WIDGET_FORMS = {
     { key: "sites", label: "Sites", type: "list", item: "Site", titleKey: "title", required: true, subtitle: (s) => host(s.url), fields: [
       { key: "title", label: "Title", required: true },
       { key: "url", label: "URL", required: true, placeholder: "https://…", hint: "Must be reachable by Glance" },
-      { key: "icon", label: "Icon", hint: ICON_HINT },
+      ICON_FIELD,
       ...more(
         { key: "check-url", label: "Check URL", hint: "Checked instead of the URL, if set" },
         { key: "error-url", label: "Error URL", hint: "Opened when the site is down" },
@@ -146,7 +148,7 @@ const WIDGET_FORMS = {
     { key: "containers", label: "Containers (instead of glance.* labels)", type: "map", item: "Container", keyLabel: "Container name", keyPlaceholder: "container_name", newKey: "container", fields: [
       { key: "name", label: "Display name" },
       { key: "url", label: "URL" },
-      { key: "icon", label: "Icon", hint: ICON_HINT },
+      ICON_FIELD,
       ...more(
         { key: "description", label: "Description" },
         { key: "same-tab", label: "Open in the same tab", type: "bool" },
@@ -337,7 +339,7 @@ function renderSimple(obj, f, onChange) {
     input.addEventListener("input", () => set(input.value === "" ? undefined : input.value));
   }
   input.dataset.key = f.key;
-  const field = h("div", { class: "field" }, label, input, hint);
+  const field = h("div", { class: "field" }, label, f.iconPreview ? h("div", { class: "icon-row" }, iconPreview(input), input) : input, hint);
   if (f.suggest) attachSuggest(field, input, f, obj, set, onChange);
   return field;
 }
@@ -357,7 +359,8 @@ function attachSuggest(field, input, f, obj, set, onChange) {
     items.forEach((it, i) => list.append(h("div", {
       class: "suggest-item" + (i === active ? " active" : ""), role: "option",
       onmousedown: (e) => { e.preventDefault(); pick(i); },
-    }, h("b", {}, it.value), " ", h("span", {}, it.label), it.detail ? h("small", {}, it.detail) : null)));
+    }, it.image ? h("img", { class: "suggest-img" + (it.invert ? " icon-invert" : ""), src: it.image, alt: "", loading: "lazy" }) : null,
+      h("b", {}, it.value), " ", h("span", {}, it.label), it.detail ? h("small", {}, it.detail) : null)));
     list.hidden = !message && !items.length;
   };
   const pick = (i) => {
@@ -365,6 +368,7 @@ function attachSuggest(field, input, f, obj, set, onChange) {
     if (!it) return;
     input.value = it.value;
     set(it.value);
+    input.dispatchEvent(new Event("change"));  // e.g. refresh the icon preview
     if (f.onPick) f.onPick(it, obj, field.closest(".grid") || field.parentElement);
     onChange();
     close();
@@ -400,6 +404,52 @@ function attachSuggest(field, input, f, obj, set, onChange) {
     }
   });
   input.addEventListener("blur", () => setTimeout(close, 150));
+}
+
+// Icons: search sh:, di:, si: and mdi: (through Glancer's server, which keeps the libraries' lists).
+async function suggestIcons(q) {
+  if (/^(https?:|\/)/.test(q.trim())) return [];  // a URL or a file in Glance's assets folder
+  const res = await api("api/icons?q=" + encodeURIComponent(q.replace(/^(si|sh|di|mdi):/, "")));
+  return res.results.map(r => ({ value: r.icon, label: r.label, detail: r.source, image: r.url, invert: r.invert }));
+}
+
+// The image Glance shows for an icon value (same rules as Glance's config-fields.go).
+function iconUrl(value) {
+  let v = String(value || "").trim();
+  const autoInvert = v.startsWith("auto-invert ");
+  v = v.replace(/^auto-invert\s+/, "");
+  const m = v.match(/^(si|sh|di|mdi):([^.]+)(?:\.(svg|png|webp))?$/);
+  if (!m) {
+    if (v.startsWith("/") && S.cfg && S.cfg.glance_url) return { url: S.cfg.glance_url.replace(/\/+$/, "") + v, invert: autoInvert };
+    return { url: /^https?:\/\//.test(v) ? v : "", invert: autoInvert };
+  }
+  const [, prefix, name, ext = "svg"] = m;
+  const urls = {
+    si: `https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${name}.svg`,
+    di: `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/${ext}/${name}.${ext}`,
+    mdi: `https://cdn.jsdelivr.net/npm/@mdi/svg@latest/svg/${name}.svg`,
+    sh: `https://cdn.jsdelivr.net/gh/selfhst/icons@main/${ext}/${name}.${ext}`,
+  };
+  return { url: urls[prefix], invert: autoInvert || prefix === "si" || prefix === "mdi" };
+}
+
+// A small live preview of the icon typed in `input`.
+function iconPreview(input) {
+  const img = h("img", { class: "icon-preview", alt: "" });
+  const box = h("span", { class: "icon-box", title: "How Glance will show this icon" }, img);
+  const update = () => {
+    const { url, invert } = iconUrl(input.value);
+    img.hidden = !url;
+    box.classList.toggle("no-icon", !url);
+    img.classList.toggle("icon-invert", !!invert);
+    if (url && img.getAttribute("src") !== url) img.src = url;
+  };
+  img.addEventListener("error", () => { img.hidden = true; box.classList.add("no-icon", "broken"); box.title = "This icon was not found"; });
+  img.addEventListener("load", () => { box.classList.remove("broken"); box.title = "How Glance will show this icon"; });
+  input.addEventListener("input", update);
+  input.addEventListener("change", update);
+  update();
+  return box;
 }
 
 // Markets: look symbols up on Yahoo Finance (through Glancer's server) and fill in the name.

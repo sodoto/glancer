@@ -57,7 +57,8 @@ const AddApp = (() => {
 
     // ---- the app
     f.name = h("input", { placeholder: "e.g. Jellyfin" });
-    f.icon = h("input", { placeholder: "e.g. si:jellyfin or sh:jellyfin", spellcheck: "false" });
+    const iconData = {};
+    const iconField = renderSimple(iconData, ICON_FIELD, () => {});  // search + preview, like everywhere else
     f.scheme = h("select", {}, h("option", { value: "http" }, "http"), h("option", { value: "https" }, "https"));
     f.host = h("input", { placeholder: "e.g. 192.168.1.30", spellcheck: "false" });
     f.port = h("input", { placeholder: "e.g. 8096", inputmode: "numeric" });
@@ -170,7 +171,7 @@ const AddApp = (() => {
         }
       } catch (e) { msg.textContent = e.message; createBtn.disabled = false; return; }
       const site = { title: name, url: publicUrl() };
-      if (f.icon.value.trim()) site.icon = f.icon.value.trim();
+      if (iconData.icon && String(iconData.icon).trim()) site.icon = String(iconData.icon).trim();
       if (internalCheck.checked && npmOn()) site["check-url"] = internalUrl();
       if (f.scheme.value === "https") site["allow-insecure"] = true;  // apps on the LAN often use self-signed certificates
       try {
@@ -196,7 +197,7 @@ const AddApp = (() => {
       h("div", { class: "form-section" }, h("h4", {}, "The app"),
         h("div", { class: "grid" },
           field("Name", f.name),
-          field("Icon", f.icon, ICON_HINT)),
+          iconField),
         h("div", { class: "grid", style: "margin-top:12px" },
           field("Where it runs on your network", h("div", { class: "hsl-row" }, f.scheme, f.host, f.port, testBtn),
             "The address NPM forwards to: the app's IP (or hostname) and port"),

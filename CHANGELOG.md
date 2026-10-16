@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 (2026-10-16)
+- Icon search: type a name in any Icon field (monitor sites, bookmark links, Docker containers, Add app) and pick
+  from the icons of all four libraries Glance supports (selfh.st, Dashboard Icons, Simple Icons, Material Design),
+  with their images. Icons that only exist as PNG or WebP get the extension Glance needs (`sh:name.png`).
+- A small preview next to every Icon field shows the icon as Glance will (and a red border if it doesn't exist).
+
 ## 0.5.0 (2026-10-16)
 - **Add app**: one window to give a new app its web address in Nginx Proxy Manager and a monitor entry in
   Glance. Enter the name, icon and where the app runs (with a Test button); the address is filled in from the
