@@ -13,6 +13,9 @@ Add pages, columns and widgets with forms instead of editing `glance.yml` by han
 - **Forms** for the widgets most homelabs use: bookmarks, monitor, Docker containers, search, RSS, weather, markets,
   calendar and clock, plus the common settings (title, title link, cache, CSS class, hide header).
   Every widget also has a **YAML** tab, and widget types or settings Glancer doesn't know are kept untouched.
+- **Theme editor** with color pickers, contrast sliders, your own presets for Glance's theme switcher, and the
+  ready-made themes from Glance's documentation to start from.
+- **Live preview** of your real Glance next to the editor, refreshed after each save.
 - **Safe saving:** before anything is written you get a preview of the changed lines and a check that Glance will
   accept the file. The file is replaced in one step (never half-written), and the previous version is kept as a
   backup you can restore with one click. Glance notices the change and reloads by itself.

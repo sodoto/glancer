@@ -143,7 +143,7 @@ const WIDGET_FORMS = {
     { key: "hide-by-default", label: "Hide containers by default", type: "bool" },
     { key: "running-only", label: "Only running containers", type: "bool" },
     ...more({ key: "format-container-names", label: "Prettify container names", type: "bool" }),
-    { key: "containers", label: "Containers (instead of glance.* labels)", type: "map", item: "Container", keyLabel: "Container name", fields: [
+    { key: "containers", label: "Containers (instead of glance.* labels)", type: "map", item: "Container", keyLabel: "Container name", keyPlaceholder: "container_name", newKey: "container", fields: [
       { key: "name", label: "Display name" },
       { key: "url", label: "URL" },
       { key: "icon", label: "Icon", hint: ICON_HINT },
@@ -180,6 +180,33 @@ const WIDGET_HELP = {
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const isEnv = (v) => typeof v === "string" && v.includes("${");
+
+// Glance writes colors as "hue saturation lightness" without units: "225 14 15" (a "%" is allowed too).
+function parseHsl(v) {
+  const m = String(v || "").trim().match(/^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%?\s+(\d+(?:\.\d+)?)%?$/);
+  return m ? [Number(m[1]) % 360, Math.min(100, Number(m[2])), Math.min(100, Number(m[3]))] : null;
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return "#" + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+}
+
+function hexToHslText(hex) {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2;
+  let hue = 0, sat = 0;
+  if (max !== min) {
+    const d = max - min;
+    sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    hue = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hue *= 60;
+  }
+  return `${Math.round(hue)} ${Math.round(sat * 100)} ${Math.round(l * 100)}`;
+}
 
 function parseNumber(v) {
   const t = v.trim();
@@ -249,6 +276,33 @@ function renderSimple(obj, f, onChange) {
       else set(undefined);
     });
     return h("div", { class: "field" }, h("label", { class: "check" }, box, h("span", {}, f.label)), hint);
+  }
+  if (type === "hsl") {
+    // A color picker plus Glance's own "hue saturation lightness" text (e.g. "225 14 15").
+    const picker = h("input", { type: "color", class: "hsl-picker", title: "Pick a color" });
+    const def = () => (f.defaultFrom ? f.defaultFrom(obj) : f.default) || "";
+    const text = h("input", { id, value: cur == null ? "" : String(cur), placeholder: def() ? `${def()} (default)` : "", spellcheck: "false", autocomplete: "off" });
+    const sync = () => {
+      const hsl = parseHsl(text.value) || parseHsl(def());
+      if (hsl) picker.value = hslToHex(...hsl);
+      field.classList.toggle("is-default", !text.value.trim());
+    };
+    picker.addEventListener("input", () => { text.value = hexToHslText(picker.value); set(text.value); sync(); });
+    text.addEventListener("input", () => { set(text.value.trim() || undefined); sync(); });
+    const reset = h("button", { type: "button", class: "mini", title: "Use Glance's default", onclick: () => { text.value = ""; set(undefined); sync(); } }, "default");
+    const field = h("div", { class: "field" }, label, h("div", { class: "hsl-row" }, picker, text, reset), hint);
+    sync();
+    return field;
+  }
+  if (type === "range") {
+    const slider = h("input", { type: "range", min: f.min, max: f.max, step: f.step });
+    const num = h("input", { id, value: cur == null ? "" : String(cur), placeholder: `${f.default} (default)`, inputmode: "decimal", class: "range-num" });
+    const sync = () => { const v = parseFloat(num.value); slider.value = isNaN(v) ? f.default : v; };
+    slider.addEventListener("input", () => { num.value = slider.value; set(parseFloat(slider.value)); });
+    num.addEventListener("input", () => { set(parseNumber(num.value)); sync(); });
+    const reset = h("button", { type: "button", class: "mini", title: "Use Glance's default", onclick: () => { num.value = ""; set(undefined); sync(); } }, "default");
+    sync();
+    return h("div", { class: "field" }, label, h("div", { class: "hsl-row" }, slider, num, reset), hint);
   }
   if (type === "select") {
     const sel = h("select", { id });
@@ -400,7 +454,7 @@ function renderBlock(obj, f, onChange) {
       };
       entries.forEach((entry, i) => {
         if (!isObj(entry[1])) entry[1] = entry[1] == null ? {} : entry[1];
-        const keyInput = h("input", { value: entry[0], placeholder: "container_name", spellcheck: "false" });
+        const keyInput = h("input", { value: entry[0], placeholder: f.keyPlaceholder || "name", spellcheck: "false" });
         keyInput.addEventListener("change", () => { entry[0] = keyInput.value.trim() || entry[0]; sync(); });
         const body = isObj(entry[1]) ? renderFields(entry[1], f.fields, sync)
           : h("div", { class: "hint" }, "Complex value: edit it in the YAML tab.");
@@ -411,8 +465,9 @@ function renderBlock(obj, f, onChange) {
           h("div", { style: "margin-top:10px" }, body)));
       });
       box.append(h("button", { type: "button", class: "small", onclick: () => {
-        let n = entries.length + 1, k = `container_${n}`;
-        while (entries.some(e => e[0] === k)) k = `container_${++n}`;
+        const prefix = f.newKey || "item";
+        let n = entries.length + 1, k = `${prefix}-${n}`;
+        while (entries.some(e => e[0] === k)) k = `${prefix}-${++n}`;
         entries.push([k, {}]); sync(); rebuild();
       } }, `+ Add ${f.item.toLowerCase()}`));
       return box;

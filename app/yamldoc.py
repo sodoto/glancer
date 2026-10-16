@@ -137,6 +137,7 @@ class Document:
             _set_outer_tail(new, _outer_tail(old))
             parent, key = self.parent(path)
             parent[key] = new
+            _sync_leading_comment(parent, key, new)
         else:
             if not isinstance(new, CommentedMap):
                 raise EditError("The top level of glance.yml must be a mapping")
@@ -624,6 +625,21 @@ class _keep_separators:
                 # the old last item is no longer last: separate it like the others were
                 _set_slot_tail(slot, "\n" if self.blank_lines else "")
         return False
+
+
+def _sync_leading_comment(parent, key, new) -> None:
+    """ruamel keeps the comment lines at the top of a block mapping twice: on the mapping itself and on
+    its parent's key (slot 3), and writes the parent's copy. After replacing the value, point the parent
+    at the new value's comment, or the old (possibly already written once) copy is used or skipped."""
+    if not isinstance(parent, CommentedMap):
+        return
+    entry = parent.ca.items.get(key)
+    if not entry or len(entry) < 4 or entry[3] is None:
+        return
+    pre = new.ca.comment[1] if isinstance(new, (CommentedMap, CommentedSeq)) and new.ca.comment and len(new.ca.comment) > 1 else None
+    entry[3] = pre or None
+    if not any(entry):
+        del parent.ca.items[key]
 
 
 def _shift_own_comments(node, delta: int) -> None:

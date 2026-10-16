@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (2026-10-16)
+- Theme editor (Settings → theme): color pickers for the background, primary, positive and negative colors
+  (Glance's HSL values are filled in for you), sliders for text contrast and color strength, a light/dark
+  switch, and the extra themes for Glance's theme picker. Start from one of the 14 ready-made themes in
+  Glance's documentation with one click. A small mock-up shows the colors as you change them; the Preview
+  panel shows the real result after saving. The YAML tab is still there.
+- Fixed: editing a top-level section (like `theme:`) as YAML could drop the comment lines at its top.
+
 ## 0.3.0 (2026-10-16)
 - Live preview: click **Preview** to see your real Glance next to the editor, on the page you are editing.
   It is drawn at desktop width and scaled to fit, so you see Glance's real layout, and it reloads by itself

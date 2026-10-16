@@ -779,6 +779,7 @@ const Editor = (() => {
   };
 
   function sectionView(key) {
+    if (key === "theme") return Theme.view();
     const s = S.tree.sections.find(x => x.key === key);
     const panel = h("div", { class: "panel" });
     const msg = h("span", { class: "msg" });

@@ -206,6 +206,21 @@ def test_add_new_top_level_section():
     assert out.startswith(HOMELAB.rstrip("\n").rsplit("\n", 1)[0][:200])
 
 
+def test_theme_form_save_keeps_comments_and_order():
+    # What the theme editor sends: the whole theme as plain data, merged into the document's root.
+    doc = Document(HOMELAB.replace("    gruvbox: {background-color: 0 0 16, primary-color: '43 59 81'}\n", ""))
+    data = safe_plain(doc.get(["theme"]))
+    data.pop("presets")
+    data.update({"background-color": "231 15 21", "primary-color": "265 89 79", "contrast-multiplier": 1.3})
+    doc.set_fields([], {"theme": data}, [])
+    out = doc.dump()
+    assert "theme:\n  # Catppuccin-ish\n  background-color: 231 15 21\n  primary-color: 265 89 79\n  contrast-multiplier: 1.3\n\npages:" in out
+    # a theme added to a file without one goes in as a new section
+    doc = Document("pages:\n  - name: A\n    columns:\n      - size: full\n")
+    doc.set_fields([], {"theme": {"background-color": "0 0 16", "light": True}}, [])
+    assert doc.dump().endswith("theme:\n  background-color: 0 0 16\n  light: true\n")
+
+
 def test_empty_flow_list_becomes_block_list_when_filled():
     text = "pages:\n  - name: A\n    columns:\n      - size: full\n        widgets: []\n"
     out = edited(text, lambda d: d.insert(["pages", 0, "columns", 0, "widgets"], None, {"type": "clock"}))
