@@ -1,3 +1,5 @@
+<img src="app/static/logo.svg" alt="" width="64" height="64">
+
 # Glancer
 
 A web editor for the config of [Glance](https://github.com/glanceapp/glance), the self-hosted dashboard.

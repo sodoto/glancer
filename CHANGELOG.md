@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1 (2026-10-16)
+- New icon: a tiled eye (in the header, the sign-in page and the browser tab). To show it in Glance, use
+  `http://<glancer-address>/static/logo.svg` as the icon, or copy the file into Glance's assets folder.
+
 ## 0.6.0 (2026-10-16)
 - Icon search: type a name in any Icon field (monitor sites, bookmark links, Docker containers, Add app) and pick
   from the icons of all four libraries Glance supports (selfh.st, Dashboard Icons, Simple Icons, Material Design),

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56">
+  <title>Glancer</title>
+  <rect width="56" height="56" rx="12" fill="#993556"/>
+  <path d="M9 28 C16 17 40 17 47 28 C40 39 16 39 9 28 Z" fill="none" stroke="#FBEAF0" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="21.5" y="21.5" width="5.8" height="5.8" rx="1.2" fill="#FBEAF0"/>
+  <rect x="28.7" y="21.5" width="5.8" height="5.8" rx="1.2" fill="#ED93B1"/>
+  <rect x="21.5" y="28.7" width="5.8" height="5.8" rx="1.2" fill="#ED93B1"/>
+  <rect x="28.7" y="28.7" width="5.8" height="5.8" rx="1.2" fill="#FBEAF0"/>
+</svg>
