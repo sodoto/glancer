@@ -67,6 +67,25 @@ def save_glance_url(url: str) -> None:
     save_account(data)
 
 
+def npm_settings() -> dict:
+    """{url, email, password, from_env}: Nginx Proxy Manager login. NPM_URL/NPM_EMAIL/NPM_PASSWORD win."""
+    if os.environ.get("NPM_URL"):
+        return {"url": os.environ["NPM_URL"], "email": os.environ.get("NPM_EMAIL", ""),
+                "password": os.environ.get("NPM_PASSWORD", ""), "from_env": True}
+    saved = _read_file().get("npm") or {}
+    return {"url": str(saved.get("url") or ""), "email": str(saved.get("email") or ""),
+            "password": str(saved.get("password") or ""), "from_env": False}
+
+
+def save_npm_settings(url: str, email: str, password: str) -> None:
+    data = _read_file()
+    if url:
+        data["npm"] = {"url": url, "email": email, "password": password}
+    else:
+        data.pop("npm", None)
+    save_account(data)
+
+
 def save_account(data: dict) -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     tmp = account_file().with_suffix(".tmp")

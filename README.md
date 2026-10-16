@@ -16,6 +16,8 @@ Add pages, columns and widgets with forms instead of editing `glance.yml` by han
 - **Theme editor** with color pickers, contrast sliders, your own presets for Glance's theme switcher, and the
   ready-made themes from Glance's documentation to start from.
 - **Live preview** of your real Glance next to the editor, refreshed after each save.
+- **Add app:** give a new app its web address in Nginx Proxy Manager (with your wildcard certificate) and a
+  monitor entry in Glance, in one window.
 - **Safe saving:** before anything is written you get a preview of the changed lines and a check that Glance will
   accept the file. The file is replaced in one step (never half-written), and the previous version is kept as a
   backup you can restore with one click. Glance notices the change and reloads by itself.
@@ -87,6 +89,29 @@ Create the login right after installing: until then, anyone who can reach the pa
 - Click **Review & save** at the bottom: you see exactly which lines change and whether Glance will accept them.
   Click **Save to glance.yml**. Glance reloads its config on its own a moment later.
 
+## Add an app (Nginx Proxy Manager)
+
+**+ Add app** creates a new app's web address in Nginx Proxy Manager (like `jellyfin.home.example.com`,
+forwarded to the app's IP and port) and adds the app to a monitor widget in Glance.
+
+**Connect NPM once** (top right **Settings**):
+
+1. In Nginx Proxy Manager, create a user just for Glancer: **Users → Add User**, with an email like
+   `glancer@example.com`. Untick **Administrator**. Under **Permissions**, set Item Visibility to "All Items",
+   **Proxy Hosts** to "Manage" and **Certificates** to "View", and the rest to "Hidden". Give it a password
+   (⋮ → Change Password). Don't turn on two-factor login for this user.
+2. In Glancer, open **Settings**, enter NPM's admin address (the page you log in to, usually
+   `http://<npm-ip>:81`), that email and password, and click **Save and test**. It shows the wildcard
+   certificate it found.
+
+**Then, for each new app:** click **+ Add app**, enter its name, icon and where it runs (IP and port), check
+the web address (the name is filled in, the domain comes from your wildcard certificate), pick the monitor
+widget, and click **Create**. The NPM address is created right away; the Glance entry goes through the usual
+**Review & save**.
+
+Glancer only reads NPM's certificates and proxy hosts and adds new ones. It never changes or deletes existing
+hosts, and it refuses an address that already exists. To undo an app, delete its proxy host in NPM.
+
 ## Updating Glancer
 
 In the folder of the compose file, run:
@@ -116,6 +141,7 @@ All optional, set under `environment:` in the compose file.
 | `GLANCE_URL` | | Your Glance address, e.g. `http://192.168.1.50:8080`, for the preview and the **Open Glance** button. You can also enter it in Glancer (**Preview**); this variable overrides that. |
 | `GLANCE_CONFIG_FILE` | `glance.yml` | The file name inside the config folder, if yours is different. |
 | `GLANCER_USERNAME` / `GLANCER_PASSWORD` | | Set the login from the environment instead of the first-start page. The password can be plain text or a `scrypt$...` hash. |
+| `NPM_URL` / `NPM_EMAIL` / `NPM_PASSWORD` | | Connect Nginx Proxy Manager from the environment instead of Settings. |
 | `GLANCE_CONFIG_DIR` | `/glance-config` | Where the config folder is mounted inside the container. |
 | `DATA_DIR` | `/data` | Where the login and backups are stored inside the container. |
 
@@ -128,8 +154,8 @@ All optional, set under `environment:` in the compose file.
   silently overwriting your edit.
 - **`${ENV}` values** are shown and saved as written. Glance fills them in when it reads the file.
 - **Markets symbol suggestions:** when you type in a market's Symbol field, Glancer asks Yahoo Finance (the
-  service Glance gets prices from) for matching symbols. Only the text you type is sent. It is the only
-  outside service Glancer contacts; without internet access you simply get no suggestions.
+  service Glance gets prices from) for matching symbols. Only the text you type is sent. Besides Glance's
+  and NPM's addresses that you enter, it is the only outside service Glancer contacts; without internet access you simply get no suggestions.
 - **YAML anchors** (`&name`, `*name`, `<<:`): widgets that use them are edited in the YAML tab only, so the
   anchors stay intact.
 - **Preview:** click **Preview** at the top to see your real Glance next to the editor, on the page you are

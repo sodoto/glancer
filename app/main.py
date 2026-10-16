@@ -1,4 +1,5 @@
 """Glancer web app: sign-in, the config editor API and the static UI."""
+import asyncio
 import difflib
 import logging
 import re
@@ -9,8 +10,9 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import auth, store, symbols
-from .config import VERSION, glance_url, load_account, save_account, save_glance_url, settings
+from . import auth, npm, store, symbols
+from .config import (VERSION, glance_url, load_account, npm_settings, save_account, save_glance_url,
+                     save_npm_settings, settings)
 from .glance import WIDGET_TYPES, check, layout_error, list_includes, tree
 from .yamldoc import Document, EditError, NotPlain, to_plain
 
@@ -374,6 +376,98 @@ async def set_glance_url(body: dict = Depends(json_body)):
         raise HTTPException(422, "Enter the full address, starting with http:// or https://, e.g. http://192.168.1.50:8080")
     save_glance_url(url)
     return {"glance_url": url}
+
+
+# ---------------------------------------------------------------- Nginx Proxy Manager ("Add app")
+
+MASK = "********"
+
+
+def _npm_client() -> npm.NPM:
+    s = npm_settings()
+    if not s["url"]:
+        raise HTTPException(409, "Connect Nginx Proxy Manager first (Settings).")
+    return npm.NPM(s["url"], s["email"], s["password"])
+
+
+@app.get("/api/npm", dependencies=[Depends(require_auth)])
+async def npm_get():
+    s = npm_settings()
+    return {"url": s["url"], "email": s["email"], "password": MASK if s["password"] else "", "from_env": s["from_env"]}
+
+
+@app.post("/api/npm", dependencies=[Depends(require_auth)])
+async def npm_save(body: dict = Depends(json_body)):
+    """Save the NPM login (an empty address disconnects), then test it."""
+    current = npm_settings()
+    if current["from_env"]:
+        raise HTTPException(409, "Nginx Proxy Manager is set with NPM_URL / NPM_EMAIL / NPM_PASSWORD. Change it there.")
+    url = str(body.get("url") or "").strip().rstrip("/")
+    email = str(body.get("email") or "").strip()
+    password = str(body.get("password") or "")
+    if password == MASK:
+        password = current["password"]
+    if not url:
+        save_npm_settings("", "", "")
+        return {"ok": True, "connected": False}
+    if not re.match(r"^https?://[^\s/]+", url):
+        raise HTTPException(422, "Enter NPM's admin address with http:// or https://, e.g. http://192.168.1.20:81")
+    if not email or not password:
+        raise HTTPException(422, "Enter the email and password of the NPM user Glancer should use.")
+    save_npm_settings(url, email, password)
+    try:
+        status = await npm.run(npm.NPM(url, email, password).status)
+    except npm.NPMError as exc:
+        return {"ok": False, "connected": True, "error": str(exc)}
+    return {"ok": True, "connected": True, "status": status}
+
+
+@app.get("/api/npm/status", dependencies=[Depends(require_auth)])
+async def npm_status():
+    try:
+        return await npm.run(_npm_client().status)
+    except npm.NPMError as exc:
+        raise HTTPException(502, str(exc))
+
+
+@app.post("/api/npm/proxy-hosts", dependencies=[Depends(require_auth)])
+async def npm_create_host(body: dict = Depends(json_body)):
+    domain = str(body.get("domain") or "").strip().lower()
+    host = str(body.get("host") or "").strip()
+    scheme = body.get("scheme") if body.get("scheme") in ("http", "https") else "http"
+    try:
+        port = int(body.get("port"))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "The app's port must be a number, e.g. 8096")
+    if not re.match(r"^[a-z0-9-]+(\.[a-z0-9-]+)+$", domain):
+        raise HTTPException(422, f"“{domain}” is not a valid address. Use letters, digits and dashes, e.g. jellyfin.home.example.com")
+    if not host or not 1 <= port <= 65535:
+        raise HTTPException(422, "Enter the app's IP address (or hostname) and port, e.g. 192.168.1.30 and 8096")
+    cert = body.get("certificate_id")
+    try:
+        created = await npm.run(_npm_client().create_proxy_host, domain, scheme, host, port,
+                                int(cert) if cert else None, body.get("force_ssl", True), body.get("websockets", True),
+                                body.get("block_exploits", True), body.get("http2", True))
+    except npm.NPMError as exc:
+        raise HTTPException(502, str(exc))
+    log.info("Created NPM proxy host %s -> %s://%s:%s", domain, scheme, host, port)
+    return created
+
+
+@app.post("/api/check-target", dependencies=[Depends(require_auth)])
+async def check_target(body: dict = Depends(json_body)):
+    """Can Glancer's machine open a connection to host:port? (A hint: NPM's LXC may see the network differently.)"""
+    host = str(body.get("host") or "").strip()
+    try:
+        port = int(body.get("port"))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Port must be a number")
+    try:
+        _, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=3)
+        writer.close()
+        return {"ok": True, "message": f"{host}:{port} answers."}
+    except (OSError, asyncio.TimeoutError) as exc:
+        return {"ok": False, "message": f"Nothing answers at {host}:{port} from Glancer's machine ({exc.__class__.__name__})."}
 
 
 # ---------------------------------------------------------------- markets symbol suggestions

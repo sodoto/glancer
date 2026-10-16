@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 (2026-10-16)
+- **Add app**: one window to give a new app its web address in Nginx Proxy Manager and a monitor entry in
+  Glance. Enter the name, icon and where the app runs (with a Test button); the address is filled in from the
+  name and your wildcard certificate, with Force HTTPS, websockets, exploit blocking and HTTP/2 on. **Create**
+  makes the NPM proxy host right away and opens the save review for the Glance entry (in an existing monitor
+  widget or a new one). Existing addresses are never changed; a name that already exists is refused.
+- **Settings** window: Glance's address and the Nginx Proxy Manager connection, with a test and step-by-step
+  instructions for a Glancer user in NPM with only the permissions it needs. `NPM_URL`, `NPM_EMAIL` and
+  `NPM_PASSWORD` work too.
+
 ## 0.4.0 (2026-10-16)
 - Theme editor (Settings → theme): color pickers for the background, primary, positive and negative colors
   (Glance's HSL values are filled in for you), sliders for text contrast and color strength, a light/dark

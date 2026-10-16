@@ -143,6 +143,8 @@ const Views = (() => {
   document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("hashchange", route);
     $("accountBtn").addEventListener("click", account);
+    $("settingsBtn").addEventListener("click", () => Settings.open());
+    $("addAppBtn").addEventListener("click", () => AddApp.open());
     $("logoutBtn").addEventListener("click", async () => {
       await api("api/logout", "POST", {}).catch(() => {});
       location.href = "login";

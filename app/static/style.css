@@ -167,6 +167,18 @@ textarea.code.tall { height: calc(100vh - 300px); min-height: 300px; }
 .wcard .children .wcard { margin-bottom: 6px; }
 button.add-widget { width: 100%; justify-content: center; border-style: dashed; color: var(--muted); background: transparent; }
 button.add-widget:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+/* add app + settings */
+.test-result { margin-top: 10px; font-size: 13px; padding: 7px 10px; border-radius: 8px; }
+.test-result.ok { background: var(--green-bg); color: var(--green); }
+.test-result.bad { background: var(--red-bg); color: var(--red); }
+.ok-text { color: var(--green); } .bad-text { color: var(--red); }
+.checks { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.addapp-checks { flex-direction: row; flex-wrap: wrap; gap: 8px 18px; }
+.addapp-summary ul { margin: 0; padding-left: 20px; }
+.addapp-summary li { margin: 4px 0; font-size: 13.5px; }
+ol.steps { padding-left: 20px; margin: 8px 0 0; }
+ol.steps li { margin: 4px 0; }
+
 /* theme editor */
 .hsl-row { display: flex; gap: 6px; align-items: center; }
 .hsl-row input:not([type=color]):not([type=range]) { flex: 1; }
