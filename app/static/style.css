@@ -170,6 +170,10 @@ textarea.code.tall { height: calc(100vh - 300px); min-height: 300px; }
 .wcard .children .wcard { margin-bottom: 6px; }
 button.add-widget { width: 100%; justify-content: center; border-style: dashed; color: var(--muted); background: transparent; }
 button.add-widget:hover { color: var(--accent); border-color: var(--accent); background: transparent; }
+.move-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 2px 0 8px; padding: 8px 10px;
+  background: var(--blue-bg); border-radius: 8px; font-size: 13px; }
+.move-row select { width: auto; flex: 1 1 220px; }
+
 /* icons */
 .icon-row { display: flex; gap: 6px; align-items: center; }
 .icon-row input { flex: 1; }

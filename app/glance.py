@@ -190,9 +190,12 @@ def _check_widgets(widgets, where: str, errors: list, warnings: list, in_group: 
             errors.append(f"{where}, widget {n}: a {wtype} widget cannot be placed inside a group")
         if wtype in CONTAINER_WIDGETS:
             _check_widgets(w.get("widgets"), f"{where}, {wtype}", errors, warnings, wtype == "group")
-        required = {"monitor": "sites", "bookmarks": "groups", "rss": "feeds", "weather": "location"}
-        if wtype in required and not w.get(required[wtype]):
-            errors.append(f"{where}, {wtype} widget: '{required[wtype]}' is required")
+        # Glance refuses a weather widget without a location; empty monitors, feeds and bookmarks just show nothing.
+        if wtype == "weather" and not w.get("location"):
+            errors.append(f"{where}, weather widget: 'location' is required")
+        empty = {"monitor": ("sites", "sites"), "bookmarks": ("groups", "links"), "rss": ("feeds", "feeds")}
+        if wtype in empty and not w.get(empty[wtype][0]):
+            warnings.append(f"{where}, {wtype} widget: no {empty[wtype][1]} yet (it will be empty)")
 
 
 # ---------------------------------------------------------------- tree for the UI

@@ -12,7 +12,8 @@ const AddApp = (() => {
     const out = [];
     const walk = (list, where) => (list || []).forEach(w => {
       if (w.type === "monitor" && w.data && (w.data.sites === undefined || Array.isArray(w.data.sites))) {
-        out.push({ path: w.path, label: `${where} › ${w.data.title || "Monitor"} (${(w.data.sites || []).length} sites)` });
+        const n = (w.data.sites || []).length;
+        out.push({ path: w.path, label: `${where} › ${w.data.title || "Monitor"} (${n} site${n === 1 ? "" : "s"})` });
       }
       if (w.children) walk(w.children, where);
     });
@@ -214,7 +215,7 @@ const AddApp = (() => {
 
   function forget() { npmStatus = null; }
 
-  return { open, forget };
+  return { open, forget, monitors };
 })();
 
 // Glancer's own settings: Glance's address and the Nginx Proxy Manager connection.

@@ -730,8 +730,20 @@ const Editor = (() => {
       path, isNew,
       title: `${isNew ? "New" : "Edit"} ${widgetLabel(type)} widget`,
       lead: type && !typeNames()[type] ? `“${type}” is not a widget type Glancer knows. It is kept exactly as written.` : null,
-      form: { noun: "widget", render: (data, onChange) => widgetForm(data, onChange), op: (data, p) => ({ op: "set_value", path: p, value: data }) },
+      form: { noun: "widget", render: (data, onChange) => widgetForm(data, onChange, { path, moveItem: (...a) => moveListItem(path, data, ...a) }), op: (data, p) => ({ op: "set_value", path: p, value: data }) },
     });
+  }
+
+  // Move an entry of this widget (e.g. a monitor site) into another widget's list. The form's own
+  // unapplied edits are applied first, then the editor reopens on the same widget.
+  async function moveListItem(path, data, listKey, index, toWidgetPath, label) {
+    try {
+      await edit({ op: "set_value", path, value: data }, { quiet: true });
+      await edit({ op: "move", path: path.concat([listKey, index]), to: toWidgetPath.concat([listKey]), index: null }, { quiet: true });
+    } catch (e) { UI.alert("Could not move it", e.message); return; }
+    Modal.forceClose();
+    editWidget(path);
+    toast(`Moved to ${label}. Click “Review & save” to write it.`, 5000);
   }
 
   function editPage(p) {

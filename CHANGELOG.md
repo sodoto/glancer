@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0 (2026-11-08)
+- Move a site from one monitor widget to another: in the monitor's edit window, click **Move…** on a site and
+  pick the other monitor widget. The site keeps all its settings and comments; your other edits in that window
+  are kept too.
+- A monitor without sites, an RSS widget without feeds and a bookmarks widget without links are now warnings
+  instead of errors, because Glance accepts them (they just show nothing). Moving the last site out of a monitor
+  no longer blocks saving.
+
 ## 0.6.1 (2026-10-16)
 - New icon: a tiled eye (in the header, the sign-in page and the browser tab). To show it in Glance, use
   `http://<glancer-address>/static/logo.svg` as the icon, or copy the file into Glance's assets folder.

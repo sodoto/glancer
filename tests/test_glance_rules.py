@@ -61,6 +61,16 @@ pages:
     assert any("something-new" in w for w in warnings)
 
 
+def test_empty_widgets_are_only_warnings(tmp_path):
+    # Glance accepts these (checked with its config:validate); a site moved away mustn't block saving.
+    text = ("pages:\n  - name: A\n    columns:\n      - size: full\n        widgets:\n"
+            "          - type: monitor\n            sites: []\n          - type: rss\n          - type: bookmarks\n")
+    errors, warnings = check(text, tmp_path / "glance.yml")
+    assert errors == []
+    assert [w.split(": ", 1)[1] for w in warnings] == [
+        "no sites yet (it will be empty)", "no feeds yet (it will be empty)", "no links yet (it will be empty)"]
+
+
 def test_yaml_errors(tmp_path):
     errors, _ = check("pages: [\n", tmp_path / "glance.yml")
     assert errors and errors[0].startswith("YAML error")

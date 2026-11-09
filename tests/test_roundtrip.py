@@ -269,6 +269,42 @@ def test_move_to_new_head_widgets_keeps_end_comments():
     Document(out)
 
 
+def test_move_a_site_between_monitor_widgets():
+    src = """pages:
+  - name: Home
+    columns:
+      - size: full
+        widgets:
+          - type: monitor
+            title: Media
+            sites:
+              - title: Jellyfin
+                url: https://jf.${DOMAIN}   # the media server
+              - title: Immich
+                url: https://photos.${DOMAIN}
+                allow-insecure: true
+
+          - type: monitor
+            title: Infra
+            sites:
+              - title: Proxmox
+                url: https://pve.lan:8006
+          - type: monitor
+            title: Empty
+"""
+    w = ["pages", 0, "columns", 0, "widgets"]
+    doc = Document(src)
+    assert doc.move(w + [0, "sites", 0], w + [1, "sites"], None) == w + [1, "sites", 1]
+    out = doc.dump()
+    assert ("            title: Infra\n            sites:\n              - title: Proxmox\n                url: https://pve.lan:8006\n"
+            "              - title: Jellyfin\n                url: https://jf.${DOMAIN}   # the media server\n") in out
+    assert "            sites:\n              - title: Immich\n                url: https://photos.${DOMAIN}\n                allow-insecure: true\n\n          - type: monitor\n            title: Infra" in out
+    # a monitor without sites: gets the list
+    doc = Document(out)
+    assert doc.move(w + [0, "sites", 0], w + [2, "sites"], None) == w + [2, "sites", 0]
+    assert doc.dump().endswith("            title: Empty\n            sites:\n              - title: Immich\n                url: https://photos.${DOMAIN}\n                allow-insecure: true\n")
+
+
 def test_move_out_of_a_group():
     col = ["pages", 0, "columns", 1, "widgets"]
     doc = Document(EXAMPLE)

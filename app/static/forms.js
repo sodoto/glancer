@@ -46,7 +46,7 @@ const WIDGET_FORMS = {
   monitor: [
     { key: "style", label: "Style", type: "select", options: [["compact", "compact"]] },
     { key: "show-failing-only", label: "Show only failing sites", type: "bool" },
-    { key: "sites", label: "Sites", type: "list", item: "Site", titleKey: "title", required: true, subtitle: (s) => host(s.url), fields: [
+    { key: "sites", label: "Sites", type: "list", item: "Site", titleKey: "title", required: true, subtitle: (s) => host(s.url), moveTo: "monitor", fields: [
       { key: "title", label: "Title", required: true },
       { key: "url", label: "URL", required: true, placeholder: "https://…", hint: "Must be reachable by Glance" },
       ICON_FIELD,
@@ -472,6 +472,7 @@ function itemTitle(f, item, i) {
 
 function renderBlock(obj, f, onChange) {
   const had = has(obj, f.key);
+  const ctx = formCtx;  // kept for later rebuilds of this block
   let el;
   const rebuild = () => { const n = build(); el.replaceWith(n); el = n; onChange(); };
 
@@ -541,6 +542,28 @@ function renderBlock(obj, f, onChange) {
         rebuild();
       } }, allOpen ? "fold all" : "unfold all"));
     }
+    // "Move to" row under an entry: pick another widget of the same type (e.g. another monitor).
+    const showMoveRow = (entry, item, i) => {
+      const old = entry.querySelector(":scope > .move-row");
+      if (old) { old.remove(); return; }
+      const targets = (f.moveTo === "monitor" ? AddApp.monitors() : []).filter(m => JSON.stringify(m.path) !== JSON.stringify(ctx.path));
+      const row = h("div", { class: "move-row" });
+      if (!targets.length) {
+        row.append(h("span", { class: "hint" }, `There is no other ${f.moveTo} widget yet. Add one first (+ Add widget).`),
+          h("button", { type: "button", class: "mini", onclick: () => row.remove() }, "OK"));
+      } else {
+        const sel = h("select", {}, ...targets.map((t, n) => h("option", { value: n }, t.label)));
+        row.append(h("span", {}, "Move to"), sel,
+          h("button", { type: "button", class: "small primary", onclick: () => {
+            const t = targets[Number(sel.value)];
+            ctx.moveItem(f.key, i, t.path, t.label.replace(/ \(\d+ sites?\)$/, ""));
+          } }, "Move"),
+          h("button", { type: "button", class: "small", onclick: () => row.remove() }, "Cancel"));
+      }
+      entry.querySelector(":scope > .item-head").after(row);
+      const s = row.querySelector("select");
+      if (s) s.focus();
+    };
     items.forEach((item, i) => {
       const title = h("b", {}, itemTitle(f, item, i));
       const sub = h("span", { class: "item-sub" }, isObj(item) && f.subtitle ? f.subtitle(item) : "");
@@ -571,6 +594,9 @@ function renderBlock(obj, f, onChange) {
             chev, title, sub),
           h("button", { type: "button", class: "mini", title: "Move up", disabled: i === 0, onclick: () => move(-1) }, "↑"),
           h("button", { type: "button", class: "mini", title: "Move down", disabled: i === items.length - 1, onclick: () => move(1) }, "↓"),
+          f.moveTo && ctx && ctx.moveItem && isObj(item)
+            ? h("button", { type: "button", class: "mini", title: `Move to another ${f.moveTo} widget`, onclick: () => showMoveRow(entry, item, i) }, "Move…")
+            : null,
           h("button", { type: "button", class: "mini danger", title: "Remove", onclick: () => {
             items.splice(i, 1);
             if (!items.length && !had && !f.required) delete obj[f.key];
@@ -597,7 +623,11 @@ function renderBlock(obj, f, onChange) {
 }
 
 // The complete form for a widget: shared fields + the type's own fields + a note about other keys.
-function widgetForm(data, onChange) {
+// Set while a widget form is built: what list entries need to move to another widget.
+let formCtx = null;
+
+function widgetForm(data, onChange, ctx = null) {
+  formCtx = ctx;
   const spec = WIDGET_FORMS[data.type === "stocks" ? "markets" : data.type] || [];
   const own = typeof spec === "function" ? spec(data) : spec;
   // The title first (with the rarely used common settings folded), then the widget's own settings.
